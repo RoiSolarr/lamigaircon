@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/* Lamig: cool frost and ink, with one warm "sun" colour for the main action.
+   The heat outside is the reason people call; the cold is what they get. */
+@theme {
+  --color-frost: #eef4f7;
+  --color-ice: #dce9ef;
+  --color-mist: #c3d6df;
+  --color-steel: #4f6b78;
+  --color-ink: #10303b;
+  --color-deep: #0a2530;
+  --color-sun: #f2b33d;
+  --color-sun-deep: #d9951a;
+  --color-ok: #1e7a55;
+  --color-warn: #a24a1e;
+  --color-bad: #b42318;
+
+  --font-display: "Archivo Variable", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    background: var(--color-frost);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    min-height: 100dvh;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    line-height: 1.05;
+    text-wrap: balance;
+  }
+  p { text-wrap: pretty; }
+  :focus-visible {
+    outline: 3px solid var(--color-sun);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection { background: var(--color-sun); color: var(--color-deep); }
+}
+
+@layer components {
+  /* Wide, heavy display type: the brand's one loud element. */
+  .display-wide {
+    font-family: var(--font-display);
+    font-stretch: 125%;
+    font-weight: 850;
+    letter-spacing: -0.01em;
+  }
+  /* Narrow numerals for times and prices, like an aircon remote's readout. */
+  .readout {
+    font-family: var(--font-display);
+    font-stretch: 70%;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    padding: 0.75rem 1.4rem;
+    font-weight: 700;
+    line-height: 1.2;
+    transition: background-color 120ms, color 120ms;
+  }
+  .btn-sun { background: var(--color-sun); color: var(--color-deep); }
+  .btn-sun:hover { background: var(--color-sun-deep); }
+  .btn-ink { background: var(--color-ink); color: var(--color-frost); }
+  .btn-ink:hover { background: var(--color-deep); }
+  .btn-line { border: 1.5px solid var(--color-ink); color: var(--color-ink); }
+  .btn-line:hover { background: var(--color-ink); color: var(--color-frost); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .field {
+    width: 100%;
+    border: 1.5px solid var(--color-mist);
+    background: white;
+    border-radius: 10px;
+    padding: 0.7rem 0.85rem;
+    color: var(--color-ink);
+  }
+  .field:focus { border-color: var(--color-ink); outline: none; box-shadow: 0 0 0 3px var(--color-sun); }
+  .label { display: block; font-weight: 700; margin-bottom: 0.35rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

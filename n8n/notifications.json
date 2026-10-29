@@ -1,0 +1,241 @@
+{
+  "name": "Lamig Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Lamig notifications (confirmation, reminder, follow up)\nRuns every 5 minutes, and right away when the website sends a booking to **Booking made**.\n\n1. **Claim due emails** asks Supabase for notifications that are due and marks them as sending, so two runs never send the same email.\n2. One email per row is written and sent with Gmail SMTP.\n3. Each row is marked sent, or failed. Failed ones retry twice (after 10 and 20 minutes), then show as failed in the website admin Automation page.\n\nReminders go 24 hours before. Follow ups go a day after staff mark the job done.",
+        "height": 340,
+        "width": 560
+      },
+      "id": "n-note-01",
+      "name": "Note 01",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "n-schedule-01",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lamig-notify",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "n-webhook-01",
+      "name": "Booking made",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "e4a1d2c3-6b5f-4a87-9c0d-2e3f4a5b6c72",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_HEADER",
+          "name": "Lamig webhook secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from lamig.claim_due_notifications(20)",
+        "options": {}
+      },
+      "id": "n-pg-claim-01",
+      "name": "Claim due emails",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        260,
+        100
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_POSTGRES",
+          "name": "Lamig Postgres (Supabase)"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Builds the subject and HTML for one notification row from lamig.claim_due_notifications().\nconst n = $input.item.json;\nconst esc = (s) => String(s ?? '').replace(/[&<>\"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\nconst peso = 'PHP ' + Number(n.price_php).toLocaleString('en-PH', { maximumFractionDigits: 0 });\nconst first = String(n.customer_name || '').split(' ')[0] || 'there';\n\nconst copy = {\n  confirmation: {\n    subject: `Booked: ${n.service_name}, ${n.when_label} (${n.ref})`,\n    heading: \"You're booked\",\n    intro: `Hi ${first}, thanks for booking with ${n.business_name}. Here are your details.`,\n    outro: 'Please clear the area around the unit and have someone 18 or older at home. Need to change something? Reply to this email or chat with us on the website, and mention your booking reference.',\n  },\n  reminder: {\n    subject: `Reminder: aircon cleaning ${n.when_label}`,\n    heading: 'See you soon',\n    intro: `Hi ${first}, this is a reminder that our crew is coming for your aircon cleaning.`,\n    outro: `Can't make it? Let us know as soon as you can by calling ${n.business_phone}.`,\n  },\n  follow_up: {\n    subject: 'How is your aircon running?',\n    heading: 'How did we do?',\n    intro: `Hi ${first}, thanks for choosing ${n.business_name}. We hope your aircon is cold again.`,\n    outro: `If the unit leaks or has any problem caused by our work, we fix it for free within 7 days. Call or text ${n.business_phone} and mention ${n.ref}.`,\n  },\n}[n.kind];\n\nif (!copy) throw new Error('Unknown notification kind: ' + n.kind);\n\nconst row = (label, value) => `<tr><td style=\"padding:6px 16px 6px 0;color:#4f6b78;vertical-align:top\">${label}</td><td style=\"padding:6px 0;font-weight:bold;color:#10303b\">${esc(value)}</td></tr>`;\n\nconst html = `<!doctype html><html><body style=\"margin:0;background:#eef4f7;font-family:Arial,Helvetica,sans-serif;color:#10303b\">\n<div style=\"max-width:560px;margin:0 auto;padding:24px 16px\">\n  <div style=\"background:#10303b;color:#eef4f7;border-radius:20px;padding:24px\">\n    <p style=\"margin:0;font-size:22px;font-weight:bold\">${esc(copy.heading)}</p>\n    <p style=\"margin:12px 0 0;font-size:32px;font-weight:bold;color:#f2b33d;letter-spacing:1px\">${esc(n.ref)}</p>\n    <p style=\"margin:2px 0 0;color:#c3d6df;font-size:13px\">Booking reference</p>\n  </div>\n  <div style=\"background:#ffffff;border-radius:20px;padding:24px;margin-top:12px;font-size:15px;line-height:1.5\">\n    <p style=\"margin:0 0 16px\">${esc(copy.intro)}</p>\n    <table style=\"border-collapse:collapse;font-size:15px\">\n      ${row('Service', n.service_name)}\n      ${row('When', n.when_label)}\n      ${row('Address', n.address)}\n      ${row('Price', peso + ', pay after the job (cash or GCash)')}\n    </table>\n    <p style=\"margin:16px 0 0\">${esc(copy.outro)}</p>\n  </div>\n  <p style=\"color:#4f6b78;font-size:12px;margin:16px 4px 0\">${esc(n.business_name)}, ${esc(n.business_phone)}. This is a demo business for an AI automation project.</p>\n</div></body></html>`;\n\nreturn {\n  json: {\n    notification_id: n.notification_id,\n    to_email: n.to_email,\n    subject: copy.subject,\n    html,\n  },\n};"
+      },
+      "id": "n-code-01",
+      "name": "Write the email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Lamig Aircon Cleaning <YOUR_GMAIL_ADDRESS@gmail.com>",
+        "toEmail": "={{ $json.to_email }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "n-email-01",
+      "name": "Send email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        740,
+        100
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_SMTP",
+          "name": "Gmail SMTP"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "webhookId": "a9b8c7d6-5e4f-4321-8765-0fedcba98761"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select lamig.mark_notification_sent($1) as result",
+        "options": {
+          "queryReplacement": "={{ [ $('Write the email').item.json.notification_id ] }}"
+        }
+      },
+      "id": "n-pg-sent-01",
+      "name": "Mark sent",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1000,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_POSTGRES",
+          "name": "Lamig Postgres (Supabase)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select lamig.mark_notification_failed($1, $2) as result",
+        "options": {
+          "queryReplacement": "={{ [ $('Write the email').item.json.notification_id, $json.error?.message ?? $json.error ?? 'Email could not be sent' ] }}"
+        }
+      },
+      "id": "n-pg-failed-01",
+      "name": "Mark failed",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1000,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_POSTGRES",
+          "name": "Lamig Postgres (Supabase)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Claim due emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking made": {
+      "main": [
+        [
+          {
+            "node": "Claim due emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim due emails": {
+      "main": [
+        [
+          {
+            "node": "Write the email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write the email": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Mark sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {}
+}

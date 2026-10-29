@@ -1,0 +1,423 @@
+{
+  "name": "Lamig Receptionist",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Lamig AI receptionist\nThe website sends each chat message here (POST with the `x-lamig-secret` header).\n\n1. **Save message and load context** stores the message and loads the history, services, FAQs and a 14 day calendar from Supabase.\n2. **AI Receptionist** (Gemini) answers. Its tools call the same database functions the website uses, so it can only book real free slots.\n3. The reply is saved and sent back to the website.\n\nStaff see every chat in the website admin Inbox.",
+        "height": 300,
+        "width": 520
+      },
+      "id": "r-note-01",
+      "name": "Note 01",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Tools\nEach tool runs one fixed SQL query. The AI only fills in the values (`$fromAI`), passed as query parameters, so it cannot run other SQL.",
+        "height": 160,
+        "width": 460,
+        "color": 7
+      },
+      "id": "r-note-02",
+      "name": "Note 02",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lamig-chat",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "r-webhook-01",
+      "name": "Chat message in",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "b7c2f3a4-9d8e-4f61-a0b2-1c3d4e5f6a71",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_HEADER",
+          "name": "Lamig webhook secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select lamig.chat_start($1::uuid, $2) as ctx",
+        "options": {
+          "queryReplacement": "={{ [ $json.body.sessionId, $json.body.message ] }}"
+        }
+      },
+      "id": "r-pg-ctx-01",
+      "name": "Save message and load context",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_POSTGRES",
+          "name": "Lamig Postgres (Supabase)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3f1c9a2e-7b44-4e0d-9a51-2d6f0c8e9b10",
+              "leftValue": "={{ $json.ctx.limited }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "r-if-01",
+      "name": "Too many messages?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"reply\": $json.ctx.reply } }}",
+        "options": {}
+      },
+      "id": "r-respond-limit-01",
+      "name": "Reply: slow down",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        740,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.ctx.message }}",
+        "options": {
+          "systemMessage": "=You are the receptionist for {{ $json.ctx.business_name }}, a home aircon cleaning business in Batangas, Philippines. You chat with customers on the business website.\n\nYour job:\n1. Answer questions about services, prices, hours, the service area and policies using ONLY the business information below. If the answer is not there, say you are not sure and offer to pass the question to a staff member.\n2. Check free times and book appointments with your tools.\n3. Pass anything you cannot handle to a person with the request_human tool: complaints, warranty claims, repairs after a check up, cancelling or changing a booking, jobs for many units or businesses, places outside the service area, or a customer who asks for a person. Ask for their name and a mobile number or email first, then call request_human, then tell them staff will contact them.\n\nHow to book:\n- Find out the service (one booking is one aircon unit) and the day. Use the calendar below to turn words like \"tomorrow\" or \"next Saturday\" into a date. Never offer a day marked closed.\n- Call check_free_slots and offer only the times it returns. Never make up times. If there are none, say why (the reason field) and suggest another day.\n- Before booking you need the customer's full name, mobile number, email and full service address (house number, street, barangay, city). Ask for missing details, a few at a time.\n- Repeat the booking back in one short message (service, date, time, address, price) and wait for a clear yes before calling book_appointment.\n- After booking, give the booking reference and say the confirmation email arrives within a few minutes. If booking fails, explain the error in plain words and offer other times.\n- For two or more units, book one appointment per unit. Each needs its own free slot.\n\nStyle:\n- Short and friendly, like a text from a helpful staff member. Two to four sentences unless you are listing times.\n- Reply in the customer's language: English, Filipino or Taglish.\n- Prices like \"PHP 1,500\". Times like \"9:00 AM\". Dates like \"Wednesday, Oct 28\".\n- Plain text only. No asterisks, headings or tables.\n- Never ask for card or bank details. Payment is cash or GCash after the job.\n- You are an AI assistant. Say so if asked.\n\nRight now it is {{ $json.ctx.now }} (Philippine time).\n{{ $json.ctx.needs_human ? 'Staff were already asked to contact this customer. If they ask, say a staff member will reach out soon.' : '' }}\n\nBusiness information:\n{{ $json.ctx.business }}\n\nServices:\n{{ $json.ctx.services }}\n\nFrequently asked questions:\n{{ $json.ctx.faqs }}\n\nCalendar for the next 14 days:\n{{ $json.ctx.calendar }}\n\nConversation so far (the customer's newest message comes after this):\n{{ $json.ctx.history }}",
+          "maxIterations": 8
+        }
+      },
+      "id": "r-agent-01",
+      "name": "AI Receptionist",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        760,
+        80
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {
+          "temperature": 0.3,
+          "maxOutputTokens": 1024
+        }
+      },
+      "id": "r-gemini-01",
+      "name": "Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        620,
+        340
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "REPLACE_GEMINI",
+          "name": "Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get the free start times for one service on one date. Always call this before offering times. Returns ok, date_label, service (name, price), slots (start_time like 09:00 and label like 9:00 AM) and reason (why there are no slots).",
+        "operation": "executeQuery",
+        "query": "select lamig.get_slots($1, $2) as result",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('service_code', 'The service_code from the Services list, for example split_cleaning', 'string'), $fromAI('date', 'The date in YYYY-MM-DD format', 'string') ] }}"
+        }
+      },
+      "id": "r-tool-slots-01",
+      "name": "check_free_slots",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        800,
+        340
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_POSTGRES",
+          "name": "Lamig Postgres (Supabase)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Book an appointment after the customer confirmed all the details. Returns ok with the booking reference (ref), or ok false with an error to explain to the customer.",
+        "operation": "executeQuery",
+        "query": "select lamig.book_appointment($1, $2, $3, $4, $5, $6, $7, $8, 'chat', $9::uuid) as result",
+        "options": {
+          "queryReplacement": "={{ [ $fromAI('service_code', 'The service_code from the Services list', 'string'), $fromAI('date', 'The date in YYYY-MM-DD format', 'string'), $fromAI('start_time', 'The start_time from check_free_slots, like 09:00', 'string'), $fromAI('full_name', 'Customer full name', 'string'), $fromAI('mobile_number', 'Customer mobile number, like 09171234567', 'string'), $fromAI('email', 'Customer email address', 'string'), $fromAI('address', 'Full service address: house number, street, barangay, city', 'string'), $fromAI('notes', 'Anything the technician should know, or an empty string', 'string', ''), $('Chat message in').first().json.body.sessionId ] }}"
+        }
+      },
+      "id": "r-tool-book-01",
+      "name": "book_appointment",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        980,
+        340
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_POSTGRES",
+          "name": "Lamig Postgres (Supabase)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Pass the conversation to a staff member, who will call or message the customer. Use for complaints, warranty claims, repairs, cancelling or changing bookings, jobs outside the service area, or when the customer asks for a person. Ask for a contact first.",
+        "operation": "executeQuery",
+        "query": "select lamig.request_human($1::uuid, $2, $3, $4) as result",
+        "options": {
+          "queryReplacement": "={{ [ $('Chat message in').first().json.body.sessionId, $fromAI('name', 'Customer name, or an empty string if not given', 'string', ''), $fromAI('contact', 'Mobile number or email to reach the customer', 'string'), $fromAI('reason', 'One or two sentences on what the customer needs', 'string') ] }}"
+        }
+      },
+      "id": "r-tool-human-01",
+      "name": "request_human",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        1160,
+        340
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_POSTGRES",
+          "name": "Lamig Postgres (Supabase)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select lamig.save_reply($1::uuid, $2) as saved",
+        "options": {
+          "queryReplacement": "={{ [ $('Save message and load context').first().json.ctx.conversation_id, $json.output ] }}"
+        }
+      },
+      "id": "r-pg-save-01",
+      "name": "Save reply",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1120,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_POSTGRES",
+          "name": "Lamig Postgres (Supabase)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"reply\": $('AI Receptionist').first().json.output } }}",
+        "options": {}
+      },
+      "id": "r-respond-01",
+      "name": "Reply to website",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"reply\": \"Sorry, I can't answer right now. Please call or text us at \" + $('Save message and load context').first().json.ctx.phone + \", or book on the website.\" } }}",
+        "options": {}
+      },
+      "id": "r-respond-fail-01",
+      "name": "Reply: AI failed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "Chat message in": {
+      "main": [
+        [
+          {
+            "node": "Save message and load context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save message and load context": {
+      "main": [
+        [
+          {
+            "node": "Too many messages?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Too many messages?": {
+      "main": [
+        [
+          {
+            "node": "Reply: slow down",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Receptionist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Receptionist": {
+      "main": [
+        [
+          {
+            "node": "Save reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: AI failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save reply": {
+      "main": [
+        [
+          {
+            "node": "Reply to website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Receptionist",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_free_slots": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Receptionist",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "book_appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Receptionist",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "request_human": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Receptionist",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {}
+}
