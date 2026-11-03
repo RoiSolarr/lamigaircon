@@ -35,7 +35,7 @@ export default async function BookPage({ searchParams }: { searchParams: Search 
   return (
     <>
       <SiteHeader account={<HeaderAccount />} />
-      <main className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 lg:pt-14">
+      <main id="main" className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 lg:pt-14">
         <h1 className="display-wide text-4xl sm:text-5xl">Book a cleaning</h1>
         <p className="mt-4 max-w-[38rem] text-lg text-steel">
           One booking covers one unit. You get a confirmation email right away and a reminder the day before.

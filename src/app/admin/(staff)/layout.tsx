@@ -22,7 +22,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
 
   if (!staff) {
     return (
-      <main className="mx-auto max-w-lg px-4 py-20">
+      <main id="main" className="mx-auto max-w-lg px-4 py-20">
         <Logo />
         <div className="panel mt-8 p-6 sm:p-8">
           <h1 className="title text-3xl">Not on the staff list</h1>
@@ -89,7 +89,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             <AdminNav waiting={waiting ?? 0} />
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</main>
+        <main id="main" className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</main>
       </div>
     </div>
   );

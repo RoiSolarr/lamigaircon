@@ -76,7 +76,7 @@ export default async function TechnicianPage({ searchParams }: { searchParams: P
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main id="main" className="mx-auto max-w-2xl px-4 py-6">
         <ErrorBanner message={actionError} />
         {!staff ? (
           <>

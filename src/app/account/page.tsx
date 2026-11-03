@@ -41,7 +41,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <SiteHeader account={<HeaderAccount />} />
-      <main className="mx-auto grid max-w-6xl gap-10 px-4 pt-10 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:gap-16 lg:pt-16">
+      <main id="main" className="mx-auto grid max-w-6xl gap-10 px-4 pt-10 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:gap-16 lg:pt-16">
         {!claims && (
           <>
             <div>

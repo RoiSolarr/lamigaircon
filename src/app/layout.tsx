@@ -17,7 +17,15 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <a
+          href="#main"
+          className="sr-only z-50 rounded-full bg-ink px-5 py-3 font-bold text-frost focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        >
+          Skip to content
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

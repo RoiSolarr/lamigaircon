@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   linkTechnicianLogin,
   saveTechnician,
@@ -8,6 +9,8 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { addDays, manilaDateOf, manilaToday } from "@/lib/format";
 import { staffDb } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "Technicians" };
 
 type Technician = {
   id: string;

@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/SiteHeader";
 
+export const metadata: Metadata = { title: "Page not found" };
+
 export default function NotFound() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-4 py-16">
+    <main id="main" className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-4 py-16">
       <Logo />
       <p className="readout mt-10 text-7xl text-sun-deep">404</p>
       <h1 className="display-wide mt-2 text-4xl">This page is not here</h1>

@@ -19,7 +19,7 @@ export default async function ResetPasswordPage() {
   return (
     <>
       <SiteHeader account={<HeaderAccount />} />
-      <main className="mx-auto max-w-xl px-4 pt-10 sm:px-6 lg:pt-16">
+      <main id="main" className="mx-auto max-w-xl px-4 pt-10 sm:px-6 lg:pt-16">
         <Link href="/account" className="mb-6 inline-flex items-center gap-2 rounded-full py-1.5 pr-4 pl-2 font-bold text-ink ring-1 ring-mist transition-colors hover:bg-white">
           <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
           Back to my account

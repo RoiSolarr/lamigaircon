@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { resolveHandoff, setAiPaused, staffReply } from "@/app/admin/actions";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
@@ -5,6 +6,8 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { formatDateTime } from "@/lib/format";
 import { AutoRefresh, InboxThread, type ThreadMessage } from "./thread";
 import { staffDb } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "Inbox" };
 
 type Person = { name: string; phone: string; email: string };
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ChatWidget, OpenChatButton } from "@/components/ChatWidget";
@@ -9,6 +10,8 @@ import { formatClock, formatClosedDays, formatHours, formatOpenDays, formatPeso,
 
 // Prices, hours and FAQs come from Supabase on each visit, so edits in the
 // table editor show up right away (the AI receptionist reads the same rows).
+// The root layout title template does not apply to a page in the same folder, so the full title is written here.
+export const metadata: Metadata = { title: { absolute: "Aircon cleaning in Batangas | Lamig Aircon Cleaning" } };
 export const dynamic = "force-dynamic";
 
 const visitSteps = [
@@ -72,7 +75,7 @@ export default async function Home() {
     <>
       <SiteHeader account={<HeaderAccount />} />
 
-      <main>
+      <main id="main">
         <section className="relative overflow-hidden">
           {/* A faint cold band behind the hero, where the remote sits. */}
           <div aria-hidden className="absolute inset-y-0 right-0 hidden w-[44%] bg-ice/70 lg:block" />

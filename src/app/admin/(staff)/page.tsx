@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { setAppointmentStatus, setAppointmentTechnician } from "@/app/admin/actions";
 import { AdminPageHeader, StatStrip } from "@/components/AdminPageHeader";
@@ -6,6 +7,8 @@ import { NoticeBanner } from "@/components/NoticeBanner";
 import { StatusActions } from "@/components/StatusActions";
 import { addDays, formatDateTime, formatPeso, formatTime, manilaDateOf, manilaToday } from "@/lib/format";
 import { staffDb } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "Appointments" };
 
 type Row = {
   id: string;

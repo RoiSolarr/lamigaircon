@@ -48,7 +48,7 @@ export default function LoginPage() {
         </Link>
       </aside>
 
-      <main className="flex items-center justify-center px-4 py-16">
+      <main id="main" className="flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-sm">
           <div className="lg:hidden">
             <Logo />

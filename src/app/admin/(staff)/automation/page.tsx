@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { retryNotification, retryScheduleEmail } from "@/app/admin/actions";
 import { AdminPageHeader, StatStrip } from "@/components/AdminPageHeader";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { formatDateTime } from "@/lib/format";
 import { staffDb } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "Automation" };
 
 type Notification = {
   id: number;
