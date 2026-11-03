@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { linkMyBooking } from "@/app/account/actions";
-import { formatPeso, formatTime } from "@/lib/format";
+import { formatPeso, formatTime, manilaDateOf, manilaToday } from "@/lib/format";
 
 export type MyBooking = {
   ref: string;
@@ -29,8 +29,8 @@ const dayParts = (iso: string) => {
 // The signed in customer's bookings on the account page, plus a form to add
 // a booking made before they had an account.
 export function MyBookings({ bookings, linked, linkError }: { bookings: MyBooking[]; linked?: string; linkError?: string }) {
-  const now = Date.now();
-  const upcoming = bookings.filter((b) => b.status === "booked" && new Date(b.ends_at).getTime() >= now).reverse();
+  const today = manilaToday();
+  const upcoming = bookings.filter((b) => b.status === "booked" && manilaDateOf(b.starts_at) >= today).reverse();
   const past = bookings.filter((b) => !upcoming.includes(b));
 
   return (
