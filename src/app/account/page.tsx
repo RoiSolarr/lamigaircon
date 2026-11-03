@@ -19,10 +19,13 @@ const benefits = [
   "Our staff see your name when you chat with us, and can reply to you.",
   "Your chat continues on your phone or any other device.",
   "The booking form fills in your name, number and email.",
+  "All your bookings and their status in one place.",
 ];
 
-export default async function AccountPage({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string; linked?: string; linkError?: string }> }) {
-  const { error, saved, linked, linkError } = await searchParams;
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string; mode?: string; next?: string }> }) {
+  const { error, saved, mode, next } = await searchParams;
+  // After signing in from the booking page, go back there.
+  const after = next === "/book" ? "/book" : "/account";
   const { settings } = await getBusiness();
   const db = await userDb();
   const { data } = await db.auth.getClaims();
@@ -47,7 +50,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             <div>
               <h1 className="display-wide text-4xl sm:text-5xl">Your account</h1>
               <p className="mt-4 max-w-[30rem] text-lg text-steel">
-                Sign in so our team knows who they are chatting with. You can still book and chat without an account.
+                Create a free account to book a cleaning. Signing in also lets our team know who they are chatting with.
               </p>
               <ul className="mt-8 space-y-4">
                 {benefits.map((b) => (
@@ -62,7 +65,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             </div>
             <div className="min-w-0">
               <ErrorBanner message={error} />
-              <AccountForm />
+              <AccountForm initialMode={mode === "signup" ? "signup" : "signin"} next={after} />
             </div>
           </>
         )}
@@ -70,7 +73,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {claims && (
           <>
             <div>
-              <h1 className="display-wide text-4xl sm:text-5xl">
+              <span aria-hidden className="avatar h-16 w-16 bg-ink text-2xl text-frost">
+                {(account?.full_name ?? meta.full_name ?? "?").slice(0, 1).toUpperCase()}
+              </span>
+              <h1 className="display-wide mt-6 text-4xl sm:text-5xl">
                 {account ? `Hi, ${account.full_name.split(" ")[0]}` : "Finish your account"}
               </h1>
               <p className="mt-4 max-w-[30rem] text-lg text-steel">
@@ -78,10 +84,19 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                   ? "When you chat with us while signed in, our staff see your name and can reply to you."
                   : "Add your name so our staff know who they are chatting with."}
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link href="/book" className="btn btn-sun">Book a cleaning</Link>
-                <SignOutButton />
-              </div>
+              {account && (
+                <dl className="mt-8 grid max-w-sm grid-cols-2 gap-3">
+                  {[
+                    ["Bookings", bookings.length],
+                    ["Coming up", bookings.filter((b) => b.status === "booked").length],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl bg-white px-4 py-3 ring-1 ring-mist/70">
+                      <dt className="text-sm text-steel">{label}</dt>
+                      <dd className="readout text-3xl">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
 
             <div className="min-w-0">
@@ -91,50 +106,59 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                   {saved === "password" ? "Your new password is saved." : "Saved."}
                 </p>
               )}
-              <form action={saveMyAccount} className="panel space-y-5 p-5 sm:p-8">
+              <form action={saveMyAccount} className="space-y-5">
                 <h2 className="title text-2xl">Your details</h2>
-                <div>
-                  <label htmlFor="name" className="label">Full name</label>
-                  <input
-                    id="name"
-                    name="full_name"
-                    required
-                    minLength={2}
-                    maxLength={100}
-                    autoComplete="name"
-                    defaultValue={account?.full_name ?? meta.full_name ?? ""}
-                    className="field"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phone" className="label">
-                    Mobile number <span className="font-normal text-steel">(optional)</span>
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    placeholder="09171234567"
-                    defaultValue={account?.phone ?? meta.phone ?? ""}
-                    className="field"
-                  />
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="name" className="label">Full name</label>
+                    <input
+                      id="name"
+                      name="full_name"
+                      required
+                      minLength={2}
+                      maxLength={100}
+                      autoComplete="name"
+                      defaultValue={account?.full_name ?? meta.full_name ?? ""}
+                      className="field"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="label">
+                      Mobile number <span className="font-normal text-steel">(optional)</span>
+                    </label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="09171234567"
+                      defaultValue={account?.phone ?? meta.phone ?? ""}
+                      className="field"
+                    />
+                  </div>
                 </div>
                 <div>
                   <p className="label">Email</p>
-                  <p className="rounded-xl bg-frost px-3.5 py-2.5 text-steel">{account?.email ?? String(claims.email ?? "")}</p>
+                  <p className="rounded-xl bg-mist/30 px-3.5 py-2.5 text-steel">{account?.email ?? String(claims.email ?? "")}</p>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-mist/70 pt-5">
-                  <Link href="/account/reset" className="text-sm text-steel underline underline-offset-2 hover:text-ink">
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <Link href="/account/reset" className="text-steel underline underline-offset-2 hover:text-ink">
                     Change password
                   </Link>
                   <button className="btn btn-ink">{account ? "Save changes" : "Save my details"}</button>
                 </div>
               </form>
+
+              <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-mist/70 pt-6">
+                <p className="min-w-0 text-steel">
+                  Signed in as <span className="font-bold break-all text-ink">{account?.email ?? String(claims.email ?? "")}</span>
+                </p>
+                <SignOutButton />
+              </div>
             </div>
 
-            {account && <MyBookings bookings={bookings} linked={linked} linkError={linkError} />}
+            {account && <MyBookings bookings={bookings} />}
           </>
         )}
       </main>

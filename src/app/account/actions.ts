@@ -20,19 +20,3 @@ export async function saveMyAccount(formData: FormData) {
   revalidatePath("/", "layout");
   redirect("/account?saved=1");
 }
-// Add a booking made before signing in to the history (needs its reference and email).
-export async function linkMyBooking(formData: FormData) {
-  const db = await userDb();
-  const { data, error } = await db.rpc("link_my_booking", {
-    p_ref: String(formData.get("ref") ?? ""),
-    p_email: String(formData.get("email") ?? ""),
-  });
-  const result = data as { ok?: boolean; ref?: string; error?: string } | null;
-
-  if (error || !result?.ok) {
-    redirect(`/account?linkError=${encodeURIComponent(error?.message ?? result?.error ?? "Could not add that booking.")}#bookings`);
-  }
-
-  revalidatePath("/account");
-  redirect(`/account?linked=${encodeURIComponent(result.ref ?? "")}#bookings`);
-}

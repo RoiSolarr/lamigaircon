@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { linkMyBooking } from "@/app/account/actions";
 import { formatPeso, formatTime, manilaDateOf, manilaToday } from "@/lib/format";
 
 export type MyBooking = {
@@ -26,33 +24,23 @@ const dayParts = (iso: string) => {
   return { weekday: part({ weekday: "short" }), day: part({ day: "numeric" }), month: part({ month: "short" }), year: part({ year: "numeric" }) };
 };
 
-// The signed in customer's bookings on the account page, plus a form to add
-// a booking made before they had an account.
-export function MyBookings({ bookings, linked, linkError }: { bookings: MyBooking[]; linked?: string; linkError?: string }) {
+// The signed in customer's bookings on the account page.
+export function MyBookings({ bookings }: { bookings: MyBooking[] }) {
   const today = manilaToday();
   const upcoming = bookings.filter((b) => b.status === "booked" && manilaDateOf(b.starts_at) >= today).reverse();
   const past = bookings.filter((b) => !upcoming.includes(b));
 
   return (
     <section id="bookings" aria-labelledby="bookings-title" className="scroll-mt-24 lg:col-span-2">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-t border-mist/70 pt-12">
-        <div>
-          <h2 id="bookings-title" className="display-wide text-3xl">My bookings</h2>
-          <p className="mt-2 text-steel">Bookings you made while signed in, on the website or in the chat.</p>
-        </div>
-        <Link href="/book" className="btn btn-ink btn-sm">Book another cleaning</Link>
+      <div className="border-t border-mist/70 pt-12">
+        <h2 id="bookings-title" className="display-wide text-3xl">My bookings</h2>
+        <p className="mt-2 text-steel">Bookings you made while signed in, on the website or in the chat.</p>
       </div>
-
-      {linked && (
-        <p role="status" className="mt-6 rounded-xl bg-ok/10 px-4 py-3 font-bold text-ok ring-1 ring-ok/20">
-          Booking {linked} is now in your history.
-        </p>
-      )}
 
       {bookings.length === 0 ? (
         <div className="panel mt-6 p-8 text-center">
           <p className="title text-xl">No bookings yet</p>
-          <p className="mt-2 text-steel">Book a cleaning while signed in and it shows up here, with its status.</p>
+          <p className="mt-2 text-steel">Book a cleaning with Book now at the top and it shows up here, with its status.</p>
         </div>
       ) : (
         <div className="mt-6 space-y-8">
@@ -95,30 +83,6 @@ export function MyBookings({ bookings, linked, linkError }: { bookings: MyBookin
             ))}
         </div>
       )}
-
-      <details className="panel group mt-8 p-5 sm:p-6" open={Boolean(linkError)}>
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-bold [&::-webkit-details-marker]:hidden">
-          Booked before you had an account? Add it here.
-          <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-frost transition-transform group-open:rotate-45">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M7 2v10M2 7h10" /></svg>
-          </span>
-        </summary>
-        <p className="mt-2 text-steel">Use the reference from your confirmation email and the email you booked with.</p>
-        {linkError && (
-          <p role="alert" className="mt-4 rounded-xl bg-bad/8 px-4 py-3 text-bad ring-1 ring-bad/20">{linkError}</p>
-        )}
-        <form action={linkMyBooking} className="mt-4 grid gap-4 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
-          <div>
-            <label htmlFor="link-ref" className="label">Booking reference</label>
-            <input id="link-ref" name="ref" required placeholder="LMG-AB12CD" autoComplete="off" className="field uppercase placeholder:normal-case" />
-          </div>
-          <div>
-            <label htmlFor="link-email" className="label">Email used for the booking</label>
-            <input id="link-email" name="email" type="email" required autoComplete="email" className="field" />
-          </div>
-          <button className="btn btn-ink">Add booking</button>
-        </form>
-      </details>
     </section>
   );
 }
