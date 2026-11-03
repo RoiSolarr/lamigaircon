@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MobileMenu } from "@/components/MobileMenu";
 
 export function Logo({ tone = "ink" }: { tone?: "ink" | "frost" }) {
   return (
@@ -16,29 +17,34 @@ export function Logo({ tone = "ink" }: { tone?: "ink" | "frost" }) {
   );
 }
 
+const LINKS: [string, string][] = [
+  ["/#services", "Services"],
+  ["/#how", "How it works"],
+  ["/#area", "Service area"],
+  ["/#faq", "Questions"],
+];
+
 // `account` is the sign in link or the signed in customer's name (HeaderAccount),
 // passed in by the page so this file stays usable from client components.
+// Below the lg size the links move into a menu button (MobileMenu), and on
+// phones the account link moves into that menu too.
 export function SiteHeader({ account }: { account?: React.ReactNode }) {
   return (
     <header className="sticky top-0 z-30 border-b border-mist/70 bg-frost/85 backdrop-blur-md supports-[backdrop-filter]:bg-frost/70">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Logo />
         <nav aria-label="Main" className="flex items-center gap-1 sm:gap-2">
-          {[
-            ["/#services", "Services"],
-            ["/#how", "How it works"],
-            ["/#area", "Service area"],
-            ["/#faq", "Questions"],
-          ].map(([href, label]) => (
+          {LINKS.map(([href, label]) => (
             <Link key={href} href={href} className="hidden rounded-full px-3 py-1.5 text-steel transition-colors hover:bg-white hover:text-ink lg:inline">
               {label}
             </Link>
           ))}
           <span aria-hidden className="mx-2 hidden h-6 w-px bg-mist lg:block" />
-          {account}
+          {account && <div className="hidden sm:block">{account}</div>}
           <Link href="/book" className="btn btn-ink btn-sm ml-1 sm:px-5">
             Book now
           </Link>
+          <MobileMenu links={LINKS} account={account} />
         </nav>
       </div>
     </header>

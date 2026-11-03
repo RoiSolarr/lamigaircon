@@ -134,7 +134,7 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
       {rows.length === 0 ? (
         <p className="mt-3 text-steel">No emails yet. Make a booking on the website and the confirmation shows up here.</p>
       ) : (
-        <div className="panel mt-4 overflow-x-auto">
+        <div className="panel relative mt-4 overflow-x-auto">
           <table className="w-full min-w-[46rem] text-left">
             <thead className="border-b border-mist/70 bg-frost/60 text-sm text-steel">
               <tr>
@@ -184,7 +184,7 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
       {schedules.length === 0 ? (
         <p className="mt-3 text-steel">No schedule emails yet. They start in the evening for technicians with jobs the next day.</p>
       ) : (
-        <div className="panel mt-4 overflow-x-auto">
+        <div className="panel relative mt-4 overflow-x-auto">
           <table className="w-full min-w-[40rem] text-left">
             <thead className="border-b border-mist/70 bg-frost/60 text-sm text-steel">
               <tr>
