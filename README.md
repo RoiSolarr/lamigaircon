@@ -1,5 +1,12 @@
 # Lamig Aircon Cleaning: AI receptionist and booking automation
 
+Built by Roi Vincent Solar. Code: https://github.com/RoiSolarr/lamigaircon
+
+**Status:** finished and working, but not deployed. The AI receptionist runs on n8n on my own laptop (localhost), because the free Render plan does not have enough RAM for it. The demo is shown in two videos:
+
+* Manual booking: https://www.loom.com/share/97d182133292444ca4857ad8f704630a
+* AI chat bot booking: https://www.loom.com/share/5eff0497710644b5b3a9e5374640a1dc
+
 A website for a fictional home aircon cleaning business in Batangas, with three automations working together:
 
 1. **AI receptionist.** A chat on the website, run by an n8n workflow with Gemini. It answers questions from the business info in the database, checks free times and books appointments. Anything it can't handle (complaints, cancellations, repairs) goes to a staff inbox.
@@ -14,9 +21,9 @@ Staff get an admin area with **Appointments**, an **Inbox** of every chat (with 
 
 | Part | Tool | Cost |
 |---|---|---|
-| Website and admin | Next.js 16, TypeScript, Tailwind CSS 4, on Vercel | Free (Hobby) |
+| Website and admin | Next.js 16, TypeScript, Tailwind CSS 4 (ready for Vercel, see DEPLOY.md) | Free (Hobby) |
 | Database and staff login | Supabase (Postgres, Auth, row level security) | Free |
-| Automations | n8n (self hosted on Render) | Free instance |
+| Automations | n8n, self hosted (the AI receptionist runs locally on my laptop) | Free |
 | AI | Google Gemini through the n8n AI Agent node | Free tier |
 | Email | Brevo (HTTP API; free Render blocks SMTP ports) | Free plan |
 
@@ -103,6 +110,8 @@ Follow [n8n/SETUP.md](n8n/SETUP.md). You will create four credentials, import th
 
 ### Step 6. Deploy
 
+In my own setup this step is not done: the receptionist needs more RAM than the free Render plan gives, so I run it locally. These steps are for a host with more memory.
+
 Follow [DEPLOY.md](DEPLOY.md). In short: move the Receptionist workflow to n8n on Render, set the Supabase sign in URLs and email sender, add the five variables in Vercel, and deploy.
 
 ## Try it
@@ -136,6 +145,12 @@ Once a week:
 - Read a few chats in the Inbox. If the AI got something wrong, fix the business info, FAQs or services in Supabase (the AI reads them on every message), or adjust the system message in the AI Receptionist node.
 - In n8n, open **Executions** for both workflows and look for errors.
 - Check your Gemini usage in Google AI Studio.
+
+## My role
+
+I chose the idea and the scope: a fictional home aircon cleaning business, with the AI receptionist, booking and follow ups first, and job scheduling as phase 2. I made the technical decisions: an n8n workflow with Gemini for the receptionist, Brevo's HTTP API for email instead of Gmail SMTP, running the receptionist locally when free Render was too slow and too small, and, for phase 2, automatic technician assignment at booking, evening schedule emails and technician logins. I set up Supabase, n8n and the website myself and recorded both demo videos from the running system.
+
+I built it with an AI coding assistant, and I say so openly: Claude (Anthropic) wrote most of the code from my decisions.
 
 ## Development tools
 

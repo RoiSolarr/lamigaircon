@@ -22,7 +22,7 @@ type Props = {
   access: "ok" | "guest" | "finish";
 };
 
-type Details = { name: string; phone: string; email: string; address: string; notes: string; company: string };
+type Details = { name: string; phone: string; email: string; address: string; notes: string };
 
 export function BookingForm(props: Props) {
   const { services, days } = props;
@@ -35,7 +35,6 @@ export function BookingForm(props: Props) {
     email: props.initialDetails?.email ?? "",
     address: "",
     notes: "",
-    company: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -296,11 +295,6 @@ export function BookingForm(props: Props) {
               onChange={set("notes")}
               className="field"
             />
-          </div>
-          {/* Honeypot: hidden from people, bots tend to fill it in. */}
-          <div aria-hidden className="absolute -left-[9999px]">
-            <label htmlFor="company">Company</label>
-            <input id="company" tabIndex={-1} autoComplete="off" value={details.company} onChange={set("company")} />
           </div>
         </div>
       </fieldset>
