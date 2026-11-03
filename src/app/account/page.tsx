@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { saveMyAccount } from "@/app/account/actions";
 import { AccountForm, SignOutButton } from "@/components/AccountForm";
 import { ChatWidget } from "@/components/ChatWidget";
@@ -7,6 +6,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { HeaderAccount } from "@/components/HeaderAccount";
 import { MyBookings, type MyBooking } from "@/components/MyBookings";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { PendingLink, SubmitButton } from "@/components/Spinner";
 import { getBusiness } from "@/lib/data";
 import { staffDb as userDb } from "@/lib/supabase/server";
 
@@ -73,29 +73,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {claims && (
           <>
             <div>
-              <span aria-hidden className="avatar h-16 w-16 bg-ink text-2xl text-frost">
-                {(account?.full_name ?? meta.full_name ?? "?").slice(0, 1).toUpperCase()}
-              </span>
-              <h1 className="display-wide mt-6 text-4xl sm:text-5xl">
+              <h1 className="display-wide text-4xl sm:text-5xl">
                 {account ? `Hi, ${account.full_name.split(" ")[0]}` : "Finish your account"}
               </h1>
-              <p className="mt-4 max-w-[30rem] text-lg text-steel">
-                {account
-                  ? "When you chat with us while signed in, our staff see your name and can reply to you."
-                  : "Add your name so our staff know who they are chatting with."}
-              </p>
-              {account && (
-                <dl className="mt-8 grid max-w-sm grid-cols-2 gap-3">
-                  {[
-                    ["Bookings", bookings.length],
-                    ["Coming up", bookings.filter((b) => b.status === "booked").length],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-2xl bg-white px-4 py-3 ring-1 ring-mist/70">
-                      <dt className="text-sm text-steel">{label}</dt>
-                      <dd className="readout text-3xl">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
+              {!account && (
+                <p className="mt-4 max-w-[30rem] text-lg text-steel">Add your name and mobile number so our staff know who they are chatting with.</p>
               )}
             </div>
 
@@ -124,12 +106,15 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                   </div>
                   <div>
                     <label htmlFor="phone" className="label">
-                      Mobile number <span className="font-normal text-steel">(optional)</span>
+                      Mobile number
                     </label>
                     <input
                       id="phone"
                       name="phone"
                       type="tel"
+                      required
+                      minLength={7}
+                      maxLength={30}
                       inputMode="tel"
                       autoComplete="tel"
                       placeholder="09171234567"
@@ -143,17 +128,14 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                   <p className="rounded-xl bg-mist/30 px-3.5 py-2.5 text-steel">{account?.email ?? String(claims.email ?? "")}</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                  <Link href="/account/reset" className="text-steel underline underline-offset-2 hover:text-ink">
+                  <PendingLink href="/account/reset" className="text-steel underline underline-offset-2 hover:text-ink">
                     Change password
-                  </Link>
-                  <button className="btn btn-ink">{account ? "Save changes" : "Save my details"}</button>
+                  </PendingLink>
+                  <SubmitButton pendingText="Saving…" className="btn btn-ink">{account ? "Save changes" : "Save my details"}</SubmitButton>
                 </div>
               </form>
 
-              <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-mist/70 pt-6">
-                <p className="min-w-0 text-steel">
-                  Signed in as <span className="font-bold break-all text-ink">{account?.email ?? String(claims.email ?? "")}</span>
-                </p>
+              <div className="mt-10 flex justify-end border-t border-mist/70 pt-6">
                 <SignOutButton />
               </div>
             </div>

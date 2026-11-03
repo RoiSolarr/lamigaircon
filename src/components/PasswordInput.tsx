@@ -51,29 +51,30 @@ export const PASSWORD_RULES = [
 
 export const passwordIsStrong = (p: string) => PASSWORD_RULES.every((r) => r.test(p));
 
-// Live checklist under the password field.
+// Live checklist under the password field. Each rule disappears once the
+// password meets it; when all are met, one green line says so.
 export function PasswordChecklist({ password, id }: { password: string; id: string }) {
+  const missing = PASSWORD_RULES.filter((r) => !r.test(password));
+  if (missing.length === 0) {
+    return (
+      <p id={id} role="status" className="mt-2 flex items-center gap-2 text-sm font-bold text-ok">
+        <span aria-hidden className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-ok text-white">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2.5 6.2 5 8.5l4.5-5" />
+          </svg>
+        </span>
+        Strong password
+      </p>
+    );
+  }
   return (
-    <ul id={id} className="mt-2 grid gap-1 text-sm sm:grid-cols-2" aria-label="Password needs">
-      {PASSWORD_RULES.map((r) => {
-        const ok = r.test(password);
-        return (
-          <li key={r.label} className={`flex items-center gap-2 ${ok ? "text-ok" : "text-steel"}`}>
-            <span
-              aria-hidden
-              className={`grid h-4 w-4 shrink-0 place-items-center rounded-full ${ok ? "bg-ok text-white" : "border-[1.5px] border-mist"}`}
-            >
-              {ok && (
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2.5 6.2 5 8.5l4.5-5" />
-                </svg>
-              )}
-            </span>
-            {r.label}
-            <span className="sr-only">{ok ? ", done" : ", not yet"}</span>
-          </li>
-        );
-      })}
+    <ul id={id} className="mt-2 grid gap-1 text-sm sm:grid-cols-2" aria-label="Password still needs">
+      {missing.map((r) => (
+        <li key={r.label} className="flex items-center gap-2 text-steel">
+          <span aria-hidden className="h-4 w-4 shrink-0 rounded-full border-[1.5px] border-mist" />
+          {r.label}
+        </li>
+      ))}
     </ul>
   );
 }

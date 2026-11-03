@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clearSavedChat } from "@/components/ChatWidget";
 import { PasswordChecklist, PasswordInput, passwordIsStrong } from "@/components/PasswordInput";
+import { Spinner } from "@/components/Spinner";
 import { browserDb } from "@/lib/supabase/browser";
 
 type Mode = "signin" | "signup" | "forgot";
@@ -40,6 +41,7 @@ export function AccountForm({ initialMode = "signin", next = "/account" }: { ini
 
     if (mode === "signup") {
       if (form.name.trim().length < 2) return setError("Please give your full name.");
+      if (form.phone.replace(/\D/g, "").length < 7) return setError("Please add your mobile number.");
       if (!passwordIsStrong(form.password)) return setError("Your password does not meet every rule in the list yet.");
       if (form.password !== form.confirm) return setError("The two passwords do not match.");
     }
@@ -129,9 +131,9 @@ export function AccountForm({ initialMode = "signin", next = "/account" }: { ini
             </div>
             <div>
               <label htmlFor="acc-phone" className="label">
-                Mobile number <span className="font-normal text-steel">(optional)</span>
+                Mobile number
               </label>
-              <input id="acc-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="09171234567" value={form.phone} onChange={set("phone")} className="field" />
+              <input id="acc-phone" required minLength={7} maxLength={30} type="tel" inputMode="tel" autoComplete="tel" placeholder="09171234567" value={form.phone} onChange={set("phone")} className="field" />
             </div>
           </div>
         )}
@@ -184,7 +186,8 @@ export function AccountForm({ initialMode = "signin", next = "/account" }: { ini
         {error && <p role="alert" className="rounded-xl bg-bad/8 px-4 py-3 text-bad ring-1 ring-bad/20">{error}</p>}
         {notice && <p role="status" className="rounded-xl bg-ok/10 px-4 py-3 text-ok ring-1 ring-ok/20">{notice}</p>}
 
-        <button type="submit" disabled={busy} className="btn btn-ink w-full">
+        <button type="submit" disabled={busy} aria-busy={busy} className="btn btn-ink w-full disabled:cursor-wait">
+          {busy && <Spinner />}
           {submitLabel}
         </button>
         {mode === "forgot" && (
@@ -213,8 +216,10 @@ export function NewPasswordForm() {
     if (password !== confirm) return setError("The two passwords do not match.");
     setBusy(true);
     const { error } = await browserDb().auth.updateUser({ password });
-    setBusy(false);
-    if (error) return setError(error.message);
+    if (error) {
+      setBusy(false);
+      return setError(error.message);
+    }
     router.push("/account?saved=password");
     router.refresh();
   }
@@ -234,7 +239,8 @@ export function NewPasswordForm() {
         </p>
       </div>
       {error && <p role="alert" className="rounded-xl bg-bad/8 px-4 py-3 text-bad ring-1 ring-bad/20">{error}</p>}
-      <button type="submit" disabled={busy} className="btn btn-ink w-full">
+      <button type="submit" disabled={busy} aria-busy={busy} className="btn btn-ink w-full disabled:cursor-wait">
+        {busy && <Spinner />}
         {busy ? "Saving…" : "Save new password"}
       </button>
     </form>

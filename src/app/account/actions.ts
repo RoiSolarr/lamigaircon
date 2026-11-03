@@ -6,6 +6,9 @@ import { staffDb as userDb } from "@/lib/supabase/server";
 
 // Save the signed in customer's name and mobile number.
 export async function saveMyAccount(formData: FormData) {
+  if (String(formData.get("phone") ?? "").replace(/\D/g, "").length < 7) {
+    redirect(`/account?error=${encodeURIComponent("Please add your mobile number.")}`);
+  }
   const db = await userDb();
   const { data, error } = await db.rpc("save_my_account", {
     p_full_name: String(formData.get("full_name") ?? ""),
