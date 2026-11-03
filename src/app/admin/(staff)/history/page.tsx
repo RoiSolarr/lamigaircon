@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { setAppointmentStatus } from "@/app/admin/actions";
 import { AdminPageHeader, StatStrip } from "@/components/AdminPageHeader";
+import { DeleteBookingButton } from "@/components/DeleteBookingButton";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { NoticeBanner } from "@/components/NoticeBanner";
-import { StatusActions } from "@/components/StatusActions";
 import { formatDateTime, formatPeso, formatTime } from "@/lib/format";
 import { staffDb } from "@/lib/supabase/server";
 
@@ -80,7 +79,7 @@ export default async function HistoryPage({
       <ErrorBanner message={actionError} />
       <NoticeBanner message={notice} />
       <AdminPageHeader title="Booking history" actions={<Link href="/admin" className="btn btn-quiet btn-sm">Open jobs</Link>}>
-        Every job that is done, cancelled or marked no show. Set one back to booked if it was marked by mistake.
+        Every job that is done, cancelled or marked no show. Use the bin icon to delete a booking you no longer need.
       </AdminPageHeader>
 
       <StatStrip
@@ -152,7 +151,7 @@ export default async function HistoryPage({
                 </div>
                 <div className="min-w-0">
                   {r.customers ? (
-                    <Link href={`/admin/customers?email=${encodeURIComponent(r.customers.email)}`} className="font-bold underline-offset-2 hover:underline">
+                    <Link href={`/admin/customers/${encodeURIComponent(r.customers.email)}`} className="font-bold underline-offset-2 hover:underline">
                       {r.customers.name}
                     </Link>
                   ) : (
@@ -161,13 +160,14 @@ export default async function HistoryPage({
                   <p className="text-sm text-steel">{[r.customers?.phone, r.customers?.email].filter(Boolean).join(", ")}</p>
                   <p className="text-sm text-steel">{r.address}</p>
                 </div>
-                <form action={setAppointmentStatus} className="lg:w-44">
-                  <input type="hidden" name="id" value={r.id} />
-                  <input type="hidden" name="back" value={back} />
-                  <StatusActions
-                    options={[{ value: "booked", label: "Set back to booked", question: `Move ${r.ref} back to open jobs?`, confirm: "Yes, set back" }]}
+                <div className="lg:justify-self-end">
+                  <DeleteBookingButton
+                    id={r.id}
+                    bookingRef={r.ref}
+                    label={`${r.services?.name ?? "booking"} for ${r.customers?.name ?? "an unknown customer"}`}
+                    back={back}
                   />
-                </form>
+                </div>
               </li>
             );
           })}

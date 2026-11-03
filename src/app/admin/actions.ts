@@ -54,6 +54,17 @@ export async function setAppointmentStatus(formData: FormData) {
   );
 }
 
+// Delete a finished booking from Booking history (the database refuses open jobs).
+export async function deleteAppointment(formData: FormData) {
+  await run(
+    "delete_appointment",
+    { p_appointment_id: text(formData, "id") },
+    backTo(formData, "/admin/history"),
+    ["/admin/customers", "/account"],
+    `Booking ${text(formData, "ref")} deleted.`,
+  );
+}
+
 export async function setAppointmentTechnician(formData: FormData) {
   const tech = text(formData, "technician_id");
   await run(
@@ -64,6 +75,7 @@ export async function setAppointmentTechnician(formData: FormData) {
 }
 
 export async function saveTechnician(formData: FormData) {
+  // Saving closes the edit panel (no ?edit= in the address).
   await run(
     "save_technician",
     {
@@ -73,6 +85,8 @@ export async function saveTechnician(formData: FormData) {
       p_email: text(formData, "email"),
     },
     "/admin/technicians",
+    [],
+    text(formData, "id") ? `${text(formData, "full_name")} saved.` : `${text(formData, "full_name")} added.`,
   );
 }
 
@@ -94,16 +108,8 @@ export async function setDayOff(formData: FormData) {
       p_off: text(formData, "off") !== "false",
       p_reason: text(formData, "reason"),
     },
-    "/admin/technicians",
+    `/admin/technicians?edit=${encodeURIComponent(text(formData, "id"))}`,
     ["/admin"],
-  );
-}
-
-export async function linkTechnicianLogin(formData: FormData) {
-  await run(
-    "link_technician_login",
-    { p_technician_id: text(formData, "id"), p_email: text(formData, "email") },
-    "/admin/technicians",
   );
 }
 

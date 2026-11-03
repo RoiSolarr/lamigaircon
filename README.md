@@ -31,6 +31,7 @@ supabase/
   migrations/0005_technicians.sql technicians, assignment, schedule emails
   migrations/0006_customer_accounts.sql customer accounts, staff replies in chats
   migrations/0007_account_bookings.sql booking history for signed in customers
+  migrations/0008_delete_booking.sql lets staff delete finished bookings from Booking history
   seed.sql                        business info, services, FAQs, holidays
   demo-data.sql                   optional sample bookings and a chat
 n8n/
@@ -58,7 +59,7 @@ Plan about an hour. Do the steps in order.
 You can use a new Supabase project or the one you already have. Everything lives in the `lamig` schema, so it won't touch other tables.
 
 1. Open **SQL Editor**. Paste and run each file, in this order:
-   `0001_schema.sql` to `0007_account_bookings.sql` in order, then `seed.sql`.
+   `0001_schema.sql` to `0008_delete_booking.sql` in order, then `seed.sql`.
    Optional: `demo-data.sql` adds sample bookings so the admin pages are not empty.
 2. Expose the schema to the API: **Project Settings > Data API > Exposed schemas**, add `lamig`, save.
 3. Copy the **Project URL** and the **anon** (or **publishable**) key from **Project Settings > API Keys**.

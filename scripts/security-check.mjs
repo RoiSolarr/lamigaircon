@@ -86,6 +86,7 @@ await cannotCall("set_ai_paused", { p_conversation_id: anyId, p_paused: true });
 await cannotCall("save_my_account", { p_full_name: "Some One", p_phone: "" });
 await cannotCall("claim_conversation", { p_conversation_id: anyId });
 await cannotCall("link_my_booking", { p_ref: "LMG-TEST01", p_email: "x@example.com" });
+await cannotCall("delete_appointment", { p_appointment_id: anyId });
 await cannotCall("my_bookings", {});
 
 console.log(failed ? `\n${failed} check(s) FAILED` : "\nAll checks passed");
