@@ -164,6 +164,13 @@
 }
 .animate-rise { animation: rise 220ms ease-out both; }
 
+/* Full screen loading screen (LoadingScreen). It blocks clicks at once, and
+   fades in after a short wait so very quick saves do not flash. */
+@keyframes loading-bg { to { background-color: var(--color-frost); } }
+@keyframes loading-in { to { opacity: 1; } }
+.loading-screen { background-color: transparent; animation: loading-bg 160ms ease-out 120ms forwards; }
+.loading-screen > * { opacity: 0; animation: loading-in 160ms ease-out 120ms forwards; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

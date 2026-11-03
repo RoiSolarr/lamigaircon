@@ -1,46 +1,112 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
-import { useFormStatus } from "react-dom";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
-// The spinning Lamig snowflake, the same one as the page loading screen.
-export function Spinner({ size = 18 }: { size?: number }) {
+// Full screen loading screen, the same look as the page loading screen
+// (src/app/loading.tsx). It covers everything, so nothing can be clicked
+// while a page opens or a save is running.
+export function LoadingScreen() {
   return (
-    <svg aria-hidden width={size} height={size} viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" className="shrink-0 animate-[spin_1.6s_linear_infinite]">
-      <path d="M16 3v26M4.7 9.5l22.6 13M4.7 22.5l22.6-13" />
-      <path d="M12 5.5l4 3 4-3M12 26.5l4-3 4 3" />
-    </svg>
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className="loading-screen fixed inset-0 z-[1000] grid cursor-wait place-items-center"
+    >
+      <div className="flex flex-col items-center gap-4 text-steel">
+        <svg aria-hidden width="44" height="44" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="animate-[spin_2.4s_linear_infinite] text-ink">
+          <path d="M16 3v26M4.7 9.5l22.6 13M4.7 22.5l22.6-13" />
+          <path d="M12 5.5l4 3 4-3M12 26.5l4-3 4 3" />
+        </svg>
+        <p className="font-bold">Loading…</p>
+      </div>
+    </div>
   );
 }
 
-// Submit button for a server action form: shows the spinner while it saves.
-export function SubmitButton({ children, pendingText, className = "" }: { children: React.ReactNode; pendingText: string; className?: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <button type="submit" disabled={pending} aria-busy={pending} className={`${className} disabled:cursor-wait disabled:opacity-90`}>
-      {pending ? (
-        <>
-          <Spinner />
-          {pendingText}
-        </>
-      ) : (
-        children
-      )}
-    </button>
-  );
-}
+// Shows the loading screen for the whole site (customer and admin):
+//  * when a search form opens its results,
+//  * when a link to another page is clicked, until that page shows, and
+//  * while any server action runs (Save, Mark done, Delete, Add day off...).
+// Lives in the root layout, inside <Suspense> because it reads the address.
+export function GlobalLoading() {
+  const path = usePathname();
+  const search = useSearchParams().toString();
+  const [navigating, setNavigating] = useState(false);
+  const [actions, setActions] = useState(0);
+  const [lastUrl, setLastUrl] = useState(`${path}?${search}`);
 
-// A link that shows the spinner while the next page loads.
-export function PendingLink({ href, children, className = "" }: { href: string; children: React.ReactNode; className?: string }) {
-  return (
-    <Link href={href} className={`inline-flex items-center gap-2 ${className}`}>
-      <LinkSpinner />
-      {children}
-    </Link>
-  );
-}
+  // The new page is showing: stop the link loading screen.
+  if (`${path}?${search}` !== lastUrl) {
+    setLastUrl(`${path}?${search}`);
+    setNavigating(false);
+  }
 
-function LinkSpinner() {
-  const { pending } = useLinkStatus();
-  return pending ? <Spinner size={16} /> : null;
+  const current = useRef(`${path}?${search}`);
+  useEffect(() => {
+    current.current = `${path}?${search}`;
+  }, [path, search]);
+
+  // Link clicks to another page of this site.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a");
+      if (!a || !a.href || a.target === "_blank" || a.hasAttribute("download")) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin) return;
+      // Same page (or only a #section on it): nothing to load.
+      const sp = url.searchParams.toString();
+      if (`${url.pathname}?${sp}` === current.current) return;
+      setNavigating(true);
+    };
+    // Plain search forms (GET) load a new page too.
+    const onSubmit = (e: SubmitEvent) => {
+      const form = e.target as HTMLFormElement;
+      if (!e.defaultPrevented && form.method === "get" && form.target !== "_blank") setNavigating(true);
+    };
+    const onBack = () => setNavigating(false);
+    // Capture phase on window, so it runs before Next's <Link> handles the click.
+    window.addEventListener("click", onClick, true);
+    document.addEventListener("submit", onSubmit);
+    window.addEventListener("popstate", onBack);
+    return () => {
+      window.removeEventListener("click", onClick, true);
+      document.removeEventListener("submit", onSubmit);
+      window.removeEventListener("popstate", onBack);
+    };
+  }, []);
+
+  // Server actions are POSTs with a "next-action" header. Count the running ones.
+  useEffect(() => {
+    const original = window.fetch;
+    const done = () => requestAnimationFrame(() => requestAnimationFrame(() => setActions((n) => Math.max(0, n - 1))));
+    window.fetch = async (input, init) => {
+      const isAction = init?.method === "POST" && new Headers(init.headers).has("next-action");
+      if (!isAction) return original(input, init);
+      setActions((n) => n + 1);
+      try {
+        const res = await original(input, init);
+        // Wait for the whole answer (it carries the updated page), then hide.
+        res.clone().arrayBuffer().then(done, done);
+        return res;
+      } catch (err) {
+        done();
+        throw err;
+      }
+    };
+    return () => {
+      window.fetch = original;
+    };
+  }, []);
+
+  // Never stay stuck: give up after 20 seconds.
+  useEffect(() => {
+    if (!navigating) return;
+    const t = setTimeout(() => setNavigating(false), 20_000);
+    return () => clearTimeout(t);
+  }, [navigating]);
+
+  return navigating || actions > 0 ? <LoadingScreen /> : null;
 }

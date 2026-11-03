@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DayPicker } from "@/components/DayPicker";
+import { LoadingScreen } from "@/components/Spinner";
 import { useSlots } from "@/components/useSlots";
 import { formatHours, formatPeso } from "@/lib/format";
+import { lockScroll } from "@/lib/scroll-lock";
 import type { BookingResult, Service } from "@/lib/types";
 
 type Props = {
@@ -131,6 +133,7 @@ export function BookingForm(props: Props) {
     <>
     {locked && <AccountNeeded access={props.access} onOpen={() => setAsking(true)} />}
     {asking && <AccountDialog access={props.access} onClose={() => setAsking(false)} />}
+    {submitting && <LoadingScreen />}
     <form onSubmit={submit} className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-8" noValidate={false}>
       <div className="relative min-w-0">
       {/* Guests can look around, but any click on the form asks them to sign in first. */}
@@ -387,7 +390,11 @@ function AccountDialog({ access, onClose }: { access: Props["access"]; onClose: 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const unlock = lockScroll(); // the page behind the box does not scroll
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      unlock();
+    };
   }, [onClose]);
 
   return (
@@ -399,13 +406,7 @@ function AccountDialog({ access, onClose }: { access: Props["access"]; onClose: 
         onClick={(e) => e.stopPropagation()}
         className="animate-rise w-full max-w-md rounded-[28px] bg-white p-6 shadow-[var(--shadow-remote)] sm:p-8"
       >
-        <span aria-hidden className="grid h-12 w-12 place-items-center rounded-full bg-ink text-sun">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <rect x="5" y="11" width="14" height="10" rx="2" />
-            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-          </svg>
-        </span>
-        <h2 id="account-dialog-title" className="title mt-5 text-2xl">
+        <h2 id="account-dialog-title" className="title text-2xl">
           {access === "guest" ? "Create an account to book" : "Finish your account first"}
         </h2>
         <p className="mt-2 text-steel">

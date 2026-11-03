@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource/atkinson-hyperlegible/400.css";
 import "@fontsource/atkinson-hyperlegible/700.css";
+import { Suspense } from "react";
+import { GlobalLoading } from "@/components/Spinner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,6 +27,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Skip to content
         </a>
         {children}
+        <Suspense fallback={null}>
+          <GlobalLoading />
+        </Suspense>
       </body>
     </html>
   );

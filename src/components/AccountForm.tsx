@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clearSavedChat } from "@/components/ChatWidget";
 import { PasswordChecklist, PasswordInput, passwordIsStrong } from "@/components/PasswordInput";
-import { Spinner } from "@/components/Spinner";
+import { LoadingScreen } from "@/components/Spinner";
 import { browserDb } from "@/lib/supabase/browser";
 
 type Mode = "signin" | "signup" | "forgot";
@@ -48,6 +48,7 @@ export function AccountForm({ initialMode = "signin", next = "/account" }: { ini
 
     setBusy(true);
     const db = browserDb();
+    let leaving = false; // keep the loading screen up until the next page shows
     try {
       if (mode === "forgot") {
         const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: callback("/account/reset") });
@@ -85,10 +86,11 @@ export function AccountForm({ initialMode = "signin", next = "/account" }: { ini
           return setError(saveError?.message ?? result?.error ?? "Your account was created, but your details were not saved.");
         }
       }
+      leaving = true;
       router.push(next);
       router.refresh();
     } finally {
-      setBusy(false);
+      if (!leaving) setBusy(false);
     }
   }
 
@@ -187,9 +189,9 @@ export function AccountForm({ initialMode = "signin", next = "/account" }: { ini
         {notice && <p role="status" className="rounded-xl bg-ok/10 px-4 py-3 text-ok ring-1 ring-ok/20">{notice}</p>}
 
         <button type="submit" disabled={busy} aria-busy={busy} className="btn btn-ink w-full disabled:cursor-wait">
-          {busy && <Spinner />}
           {submitLabel}
         </button>
+        {busy && <LoadingScreen />}
         {mode === "forgot" && (
           <button type="button" onClick={() => switchTo("signin")} className="block w-full text-center text-sm text-steel underline underline-offset-2 hover:text-ink">
             Back to sign in
@@ -240,9 +242,9 @@ export function NewPasswordForm() {
       </div>
       {error && <p role="alert" className="rounded-xl bg-bad/8 px-4 py-3 text-bad ring-1 ring-bad/20">{error}</p>}
       <button type="submit" disabled={busy} aria-busy={busy} className="btn btn-ink w-full disabled:cursor-wait">
-        {busy && <Spinner />}
         {busy ? "Saving…" : "Save new password"}
       </button>
+      {busy && <LoadingScreen />}
     </form>
   );
 }
@@ -251,6 +253,8 @@ export function SignOutButton() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   return (
+    <>
+    {busy && <LoadingScreen />}
     <button
       type="button"
       disabled={busy}
@@ -265,5 +269,6 @@ export function SignOutButton() {
     >
       {busy ? "Signing out…" : "Sign out"}
     </button>
+    </>
   );
 }

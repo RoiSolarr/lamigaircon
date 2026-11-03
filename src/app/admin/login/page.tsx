@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PasswordInput } from "@/components/PasswordInput";
+import { LoadingScreen } from "@/components/Spinner";
 import { Logo } from "@/components/SiteHeader";
 import { browserDb } from "@/lib/supabase/browser";
 
@@ -19,8 +20,8 @@ export default function LoginPage() {
     setBusy(true);
     setError("");
     const { error } = await browserDb().auth.signInWithPassword({ email, password });
-    setBusy(false);
     if (error) {
+      setBusy(false);
       setError(error.message === "Invalid login credentials" ? "Wrong email or password." : error.message);
       return;
     }
@@ -68,6 +69,7 @@ export default function LoginPage() {
             <button type="submit" disabled={busy} className="btn btn-ink w-full">
               {busy ? "Signing in…" : "Sign in"}
             </button>
+            {busy && <LoadingScreen />}
           </form>
           <p className="mt-8 text-sm text-steel lg:hidden">
             <Link href="/" className="underline underline-offset-2">Back to the website</Link>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { saveMyAccount } from "@/app/account/actions";
 import { AccountForm, SignOutButton } from "@/components/AccountForm";
 import { ChatWidget } from "@/components/ChatWidget";
@@ -6,7 +7,6 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { HeaderAccount } from "@/components/HeaderAccount";
 import { MyBookings, type MyBooking } from "@/components/MyBookings";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
-import { PendingLink, SubmitButton } from "@/components/Spinner";
 import { getBusiness } from "@/lib/data";
 import { staffDb as userDb } from "@/lib/supabase/server";
 
@@ -128,10 +128,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                   <p className="rounded-xl bg-mist/30 px-3.5 py-2.5 text-steel">{account?.email ?? String(claims.email ?? "")}</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                  <PendingLink href="/account/reset" className="text-steel underline underline-offset-2 hover:text-ink">
+                  <Link href="/account/reset" className="text-steel underline underline-offset-2 hover:text-ink">
                     Change password
-                  </PendingLink>
-                  <SubmitButton pendingText="Saving…" className="btn btn-ink">{account ? "Save changes" : "Save my details"}</SubmitButton>
+                  </Link>
+                  <button className="btn btn-ink">{account ? "Save changes" : "Save my details"}</button>
                 </div>
               </form>
 
