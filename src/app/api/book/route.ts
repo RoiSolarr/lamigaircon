@@ -35,6 +35,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Could not book. Please try again." }, { status: 400 });
   }
 
+  // Only signed in customers with a finished account can book on the website.
+  const db = await userDb();
+  const { data: claims } = await db.auth.getClaims();
+  if (!claims?.claims) {
+    return NextResponse.json({ ok: false, error: "Create an account or sign in to book." }, { status: 401 });
+  }
+  const { data: account } = await db.from("customer_accounts").select("user_id").eq("user_id", claims.claims.sub).maybeSingle();
+  if (!account) {
+    return NextResponse.json({ ok: false, error: "Add your name on the My account page first, then book." }, { status: 403 });
+  }
+
   const { data, error } = await publicDb().rpc("book_appointment", {
     p_service_code: text(body.service, 50),
     p_date: text(body.date, 10),
@@ -57,13 +68,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { status: 422 });
   }
 
-  // Signed in customers see this booking in their history on the account page.
+  // The customer sees this booking in their history on the account page.
   try {
-    const db = await userDb();
-    const { data: claims } = await db.auth.getClaims();
-    if (claims?.claims) {
-      await db.rpc("link_my_booking", { p_ref: result.ref, p_email: text(body.email, 254) });
-    }
+    await db.rpc("link_my_booking", { p_ref: result.ref, p_email: text(body.email, 254) });
   } catch (err) {
     console.warn("Could not add the booking to the account history", err);
   }

@@ -9,9 +9,10 @@ import { browserDb } from "@/lib/supabase/browser";
 type Mode = "signin" | "signup" | "forgot";
 
 // Customer sign in, sign up and "forgot password" (Supabase Auth, email and password).
-export function AccountForm() {
+// `next` is where to go after signing in (the account page, or back to booking).
+export function AccountForm({ initialMode = "signin", next = "/account" }: { initialMode?: "signin" | "signup"; next?: string }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [form, setForm] = useState({ name: "", phone: "", email: "", password: "", confirm: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -64,7 +65,7 @@ export function AccountForm() {
           password: form.password,
           options: {
             data: { full_name: form.name.trim(), phone: form.phone.trim() },
-            emailRedirectTo: callback("/account"),
+            emailRedirectTo: callback(next),
           },
         });
         if (error) return setError(error.message);
@@ -82,7 +83,7 @@ export function AccountForm() {
           return setError(saveError?.message ?? result?.error ?? "Your account was created, but your details were not saved.");
         }
       }
-      router.push("/account");
+      router.push(next);
       router.refresh();
     } finally {
       setBusy(false);

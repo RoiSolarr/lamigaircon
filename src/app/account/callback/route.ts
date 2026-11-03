@@ -7,8 +7,8 @@ import { staffDb as userDb } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
   const rawNext = url.searchParams.get("next") ?? "/account";
-  // Only our own account pages, never another site.
-  const next = rawNext.startsWith("/account") ? rawNext : "/account";
+  // Only our own account pages or the booking page, never another site.
+  const next = rawNext.startsWith("/account") || rawNext === "/book" ? rawNext : "/account";
 
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");

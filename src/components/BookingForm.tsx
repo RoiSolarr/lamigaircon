@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { DayPicker } from "@/components/DayPicker";
 import { useSlots } from "@/components/useSlots";
 import { formatHours, formatPeso } from "@/lib/format";
@@ -15,6 +16,8 @@ type Props = {
   initialDate: string;
   initialTime: string;
   initialDetails?: { name: string; phone: string; email: string };
+  // "guest": not signed in. "finish": signed in but no name saved yet. Both can look, not book.
+  access: "ok" | "guest" | "finish";
 };
 
 type Details = { name: string; phone: string; email: string; address: string; notes: string; company: string };
@@ -36,6 +39,8 @@ export function BookingForm(props: Props) {
   const [error, setError] = useState("");
   const [booked, setBooked] = useState<Extract<BookingResult, { ok: true }> | null>(null);
   const { loading, failed, result } = useSlots(service, date);
+  const locked = props.access !== "ok";
+  const [asking, setAsking] = useState(false);
 
   const selected = services.find((s) => s.code === service);
   const slots = result?.ok ? result.slots : [];
@@ -123,8 +128,21 @@ export function BookingForm(props: Props) {
   }
 
   return (
+    <>
+    {locked && <AccountNeeded access={props.access} onOpen={() => setAsking(true)} />}
+    {asking && <AccountDialog access={props.access} onClose={() => setAsking(false)} />}
     <form onSubmit={submit} className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-8" noValidate={false}>
-      <div className="min-w-0 space-y-6">
+      <div className="relative min-w-0">
+      {/* Guests can look around, but any click on the form asks them to sign in first. */}
+      {locked && (
+        <button
+          type="button"
+          onClick={() => setAsking(true)}
+          aria-label="Sign in to choose a service, day and time"
+          className="absolute inset-0 z-10 cursor-pointer rounded-[28px] focus-visible:outline-3 focus-visible:outline-sun"
+        />
+      )}
+      <div className="min-w-0 space-y-6" inert={locked}>
       <fieldset className="panel min-w-0 p-5 sm:p-7">
         <legend className="title float-left flex w-full items-center gap-3 text-2xl">
           <span aria-hidden className="readout grid h-9 w-9 place-items-center rounded-full bg-ink text-xl text-frost">1</span> Service
@@ -284,6 +302,7 @@ export function BookingForm(props: Props) {
         </div>
       </fieldset>
       </div>
+      </div>
 
       <aside className="relative overflow-hidden rounded-[28px] bg-ink p-6 text-frost shadow-[var(--shadow-remote)] lg:sticky lg:top-24">
         <div aria-hidden className="vent absolute inset-x-0 top-0 h-8" />
@@ -310,11 +329,104 @@ export function BookingForm(props: Props) {
             {error}
           </p>
         )}
-        <button type="submit" className="btn btn-sun mt-5 w-full py-3.5 text-lg" disabled={submitting}>
-          {submitting ? "Booking…" : "Book this time"}
-        </button>
-        <p className="mt-3 text-center text-sm text-mist">A confirmation email comes right after.</p>
+        {locked ? (
+          <button type="button" onClick={() => setAsking(true)} className="btn btn-sun mt-5 w-full py-3.5 text-lg">
+            {props.access === "guest" ? "Sign in to book" : "Finish my account"}
+          </button>
+        ) : (
+          <button type="submit" className="btn btn-sun mt-5 w-full py-3.5 text-lg" disabled={submitting}>
+            {submitting ? "Booking…" : "Book this time"}
+          </button>
+        )}
+        <p className="mt-3 text-center text-sm text-mist">
+          {locked ? "Booking needs a free account." : "A confirmation email comes right after."}
+        </p>
       </aside>
     </form>
+    </>
+  );
+}
+
+const SIGN_UP = "/account?mode=signup&next=/book";
+const SIGN_IN = "/account?next=/book";
+
+// Shown above the form to guests: booking needs an account.
+function AccountNeeded({ access, onOpen }: { access: Props["access"]; onOpen: () => void }) {
+  return (
+    <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[24px] bg-ice/60 p-5 ring-1 ring-mist sm:px-6">
+      <div className="flex min-w-0 items-start gap-3">
+        <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-sun">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
+          </svg>
+        </span>
+        <div className="min-w-0">
+          <p className="font-bold">{access === "guest" ? "Booking needs a free account" : "Finish your account to book"}</p>
+          <p className="text-steel">
+            {access === "guest"
+              ? "Look at the services and free times first. Sign in or create an account when you are ready."
+              : "Add your name on the My account page, then come back here."}
+          </p>
+        </div>
+      </div>
+      {access === "guest" ? (
+        <div className="flex flex-wrap gap-2">
+          <Link href={SIGN_IN} className="btn btn-quiet btn-sm">Sign in</Link>
+          <Link href={SIGN_UP} className="btn btn-ink btn-sm">Create account</Link>
+        </div>
+      ) : (
+        <button type="button" onClick={onOpen} className="btn btn-ink btn-sm">Why?</button>
+      )}
+    </div>
+  );
+}
+
+// Opens when a guest tries to pick something on the form.
+function AccountDialog({ access, onClose }: { access: Props["access"]; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-deep/60 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-dialog-title"
+        onClick={(e) => e.stopPropagation()}
+        className="animate-rise w-full max-w-md rounded-[28px] bg-white p-6 shadow-[var(--shadow-remote)] sm:p-8"
+      >
+        <span aria-hidden className="grid h-12 w-12 place-items-center rounded-full bg-ink text-sun">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          </svg>
+        </span>
+        <h2 id="account-dialog-title" className="title mt-5 text-2xl">
+          {access === "guest" ? "Create an account to book" : "Finish your account first"}
+        </h2>
+        <p className="mt-2 text-steel">
+          {access === "guest"
+            ? "Bookings are saved to your account, so you can check them and their status any time. It takes a minute."
+            : "Add your name on the My account page, then come back to pick your service and time."}
+        </p>
+        <div className="mt-6 grid gap-2">
+          {access === "guest" ? (
+            <>
+              <Link href={SIGN_UP} autoFocus className="btn btn-ink">Create account</Link>
+              <Link href={SIGN_IN} className="btn btn-quiet">I already have an account</Link>
+            </>
+          ) : (
+            <Link href="/account" autoFocus className="btn btn-ink">Go to my account</Link>
+          )}
+          <button type="button" onClick={onClose} className="btn btn-sm mt-1 text-steel hover:text-ink">
+            Keep looking
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

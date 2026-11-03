@@ -22,7 +22,7 @@ export default async function BookPage({ searchParams }: { searchParams: Search 
   const initialDate = params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date) ? params.date : "";
   const initialTime = params.time && /^\d{2}:\d{2}$/.test(params.time) ? params.time : "";
 
-  // Signed in customers get their name, phone and email filled in.
+  // Only signed in customers can book. They get their name, phone and email filled in.
   const db = await userDb();
   const { data: claims } = await db.auth.getClaims();
   const { data: account } = claims?.claims
@@ -49,6 +49,7 @@ export default async function BookPage({ searchParams }: { searchParams: Search 
           initialDate={initialDate}
           initialTime={initialTime}
           initialDetails={initialDetails}
+          access={account ? "ok" : claims?.claims ? "finish" : "guest"}
         />
       </main>
       <SiteFooter name={settings.name} phone={settings.phone} email={settings.email} />
