@@ -23,14 +23,23 @@ export function FreeTimes({ services, days }: { services: Service[]; days: strin
   return (
     <section
       aria-labelledby="free-times-title"
-      className="min-w-0 rounded-[28px] bg-ink p-5 text-frost shadow-[0_24px_60px_-30px_rgba(10,37,48,0.9)] sm:p-7"
+      className="relative min-w-0 overflow-hidden rounded-[32px] bg-ink p-5 text-frost shadow-[var(--shadow-remote)] sm:p-7"
     >
-      <div className="flex items-start justify-between gap-4">
-        <h2 id="free-times-title" className="text-xl font-bold" style={{ fontStretch: "100%" }}>
-          Free times
-        </h2>
+      <div aria-hidden className="vent absolute inset-x-0 top-0 h-10" />
+      <div className="relative flex items-center justify-between gap-4 rounded-2xl bg-deep px-4 py-3.5 ring-1 ring-white/10">
+        <div>
+          <h2 id="free-times-title" className="title text-lg leading-tight">
+            Free times
+          </h2>
+          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-mist">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-ok" />
+            Live from our schedule
+          </p>
+        </div>
         <div className="text-right" aria-live="polite">
-          <p className="readout text-5xl leading-none text-sun sm:text-6xl">{chosen ? chosen.label.replace(/ (AM|PM)/, "") : "--:--"}</p>
+          <p className="readout text-5xl leading-none text-sun [text-shadow:0_0_18px_rgba(242,179,61,0.35)] sm:text-6xl">
+            {chosen ? chosen.label.replace(/ (AM|PM)/, "") : "--:--"}
+          </p>
           <p className="mt-1 text-sm text-mist">{chosen ? chosen.label.slice(-2) : "pick a time"}</p>
         </div>
       </div>
@@ -45,7 +54,7 @@ export function FreeTimes({ services, days }: { services: Service[]; days: strin
           setService(e.target.value);
           setTime("");
         }}
-        className="mt-1 w-full rounded-xl border-[1.5px] border-white/25 bg-deep px-3 py-2.5 text-frost focus:border-sun focus:outline-none"
+        className="mt-1 w-full rounded-xl border-[1.5px] border-white/20 bg-deep px-3 py-2.5 text-frost transition-colors hover:border-white/40 focus:border-sun focus:outline-none"
       >
         {services.map((s) => (
           <option key={s.code} value={s.code}>
@@ -96,7 +105,7 @@ export function FreeTimes({ services, days }: { services: Service[]; days: strin
         )}
       </div>
 
-      <Link href={bookHref} className="btn btn-sun mt-6 w-full text-lg">
+      <Link href={bookHref} className="btn btn-sun mt-6 w-full py-3.5 text-lg">
         {chosen ? `Book ${chosen.label}` : "Book a cleaning"}
       </Link>
     </section>

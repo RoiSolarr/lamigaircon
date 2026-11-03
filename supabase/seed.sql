@@ -83,3 +83,21 @@ insert into lamig.closed_dates (closed_on, reason) values
   ('2026-12-31', 'New Year''s Eve'),
   ('2027-01-01', 'New Year''s Day')
 on conflict (closed_on) do nothing;
+
+-- Technicians (phase 2: job scheduling). Their emails start empty, so no
+-- schedule email goes anywhere until you set one. To receive them yourself,
+-- use Gmail "plus" addresses, which all arrive in your own inbox:
+--   update lamig.technicians set email = 'you+mario@gmail.com' where full_name = 'Mario Santos';
+insert into lamig.technicians (full_name, phone, sort_order)
+select v.full_name, v.phone, v.sort_order
+from (values
+  ('Mario Santos', '09175550201', 1),
+  ('Jun Reyes',    '09175550202', 2)
+) as v(full_name, phone, sort_order)
+where not exists (select 1 from lamig.technicians t where t.full_name = v.full_name);
+
+-- Give upcoming bookings made before phase 2 a technician.
+select lamig.assign_open_jobs(
+  (now() at time zone 'Asia/Manila')::date,
+  (now() at time zone 'Asia/Manila')::date + 366
+);

@@ -8,7 +8,7 @@ A website for a fictional home aircon cleaning business in Batangas, with three 
 
 Staff get an admin area with **Appointments**, an **Inbox** of every chat (with the ones that need a person on top), and an **Automation** page that shows whether the email workflow is healthy.
 
-Job scheduling (assigning technicians) is phase 2. See "Next steps" in ARCHITECTURE.md.
+**Phase 2, job scheduling:** every booking is assigned to a technician, technicians get their schedule by email each evening, and they sign in to mark jobs done. See [PHASE2.md](PHASE2.md).
 
 ## Stack
 
@@ -18,7 +18,7 @@ Job scheduling (assigning technicians) is phase 2. See "Next steps" in ARCHITECT
 | Database and staff login | Supabase (Postgres, Auth, row level security) | Free |
 | Automations | n8n (self hosted on Render) | Free instance |
 | AI | Google Gemini through the n8n AI Agent node | Free tier |
-| Email | Gmail SMTP with an app password | Free |
+| Email | Brevo (HTTP API; free Render blocks SMTP ports) | Free plan |
 
 ## Project layout
 
@@ -28,11 +28,14 @@ supabase/
   migrations/0002_security.sql    row level security and grants
   migrations/0003_booking.sql     get_slots() and book_appointment()
   migrations/0004_automation.sql  functions for n8n and for staff actions
+  migrations/0005_technicians.sql technicians, assignment, schedule emails
+  migrations/0006_customer_accounts.sql customer accounts, staff replies in chats
   seed.sql                        business info, services, FAQs, holidays
   demo-data.sql                   optional sample bookings and a chat
 n8n/
   receptionist.json               import into n8n: the AI receptionist
   notifications.json              import into n8n: confirmation, reminder, follow up
+  technician-schedules.json       import into n8n: daily technician schedules
   SETUP.md                        step by step n8n setup
 src/
   app/page.tsx                    home page with live free times
@@ -53,7 +56,7 @@ Plan about an hour. Do the steps in order.
 You can use a new Supabase project or the one you already have. Everything lives in the `lamig` schema, so it won't touch other tables.
 
 1. Open **SQL Editor**. Paste and run each file, in this order:
-   `0001_schema.sql`, `0002_security.sql`, `0003_booking.sql`, `0004_automation.sql`, then `seed.sql`.
+   `0001_schema.sql` to `0006_customer_accounts.sql` in order, then `seed.sql`.
    Optional: `demo-data.sql` adds sample bookings so the admin pages are not empty.
 2. Expose the schema to the API: **Project Settings > Data API > Exposed schemas**, add `lamig`, save.
 3. Copy the **Project URL** and the **anon** (or **publishable**) key from **Project Settings > API Keys**.
@@ -97,9 +100,7 @@ Follow [n8n/SETUP.md](n8n/SETUP.md). You will create four credentials, import th
 
 ### Step 6. Deploy
 
-1. Push to GitHub and import the repo in Vercel.
-2. Add the five variables from `.env.local` in **Vercel > Project > Settings > Environment Variables**, then deploy.
-3. In Supabase **Authentication > URL Configuration**, set the Site URL to your Vercel URL.
+Follow [DEPLOY.md](DEPLOY.md). In short: move the Receptionist workflow to n8n on Render, set the Supabase sign in URLs and email sender, add the five variables in Vercel, and deploy.
 
 ## Try it
 

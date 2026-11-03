@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Keeps the staff session fresh on admin pages. Supabase access tokens expire
-// after an hour; this refreshes them and writes the new cookies.
+// Keeps the Supabase session fresh (staff, technicians and signed in customers).
+// Access tokens expire after an hour; this refreshes them and writes the new
+// cookies. Only the admin and technician pages require signing in.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -26,9 +27,11 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims);
-  const onLogin = request.nextUrl.pathname === "/admin/login";
+  const path = request.nextUrl.pathname;
+  const staffArea = path.startsWith("/admin") || path === "/tech";
+  const onLogin = path === "/admin/login";
 
-  if (!signedIn && !onLogin) {
+  if (staffArea && !signedIn && !onLogin) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     return NextResponse.redirect(url);
@@ -38,5 +41,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/tech", "/", "/book", "/account/:path*"],
 };

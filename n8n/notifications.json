@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Lamig notifications (confirmation, reminder, follow up)\nRuns every 5 minutes, and right away when the website sends a booking to **Booking made**.\n\n1. **Claim due emails** asks Supabase for notifications that are due and marks them as sending, so two runs never send the same email.\n2. One email per row is written and sent with Gmail SMTP.\n3. Each row is marked sent, or failed. Failed ones retry twice (after 10 and 20 minutes), then show as failed in the website admin Automation page.\n\nReminders go 24 hours before. Follow ups go a day after staff mark the job done.",
+        "content": "## Lamig notifications (confirmation, reminder, follow up)\nRuns every 5 minutes, and right away when the website sends a booking to **Booking made**.\n\n1. **Claim due emails** asks Supabase for notifications that are due and marks them as sending, so two runs never send the same email.\n2. One email per row is written and sent with Brevo (Render blocks SMTP ports, Brevo uses HTTPS).\n3. Each row is marked sent, or failed. Failed ones retry twice (after 10 and 20 minutes), then show as failed in the website admin Automation page.\n\nReminders go 24 hours before. Follow ups go a day after staff mark the job done.",
         "height": 340,
         "width": 560
       },
@@ -97,29 +97,31 @@
     },
     {
       "parameters": {
-        "fromEmail": "Lamig Aircon Cleaning <YOUR_GMAIL_ADDRESS@gmail.com>",
-        "toEmail": "={{ $json.to_email }}",
-        "subject": "={{ $json.subject }}",
-        "emailFormat": "html",
-        "html": "={{ $json.html }}",
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/smtp/email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sender: {\"name\":\"Lamig Aircon Cleaning\",\"email\":\"roivincentsolar@gmail.com\"}, to: [{ email: $json.to_email }], subject: $json.subject, htmlContent: $json.html }) }}",
         "options": {}
       },
       "id": "n-email-01",
       "name": "Send email",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         740,
         100
       ],
       "credentials": {
-        "smtp": {
-          "id": "REPLACE_SMTP",
-          "name": "Gmail SMTP"
+        "httpHeaderAuth": {
+          "id": "REPLACE_BREVO",
+          "name": "Brevo API key"
         }
       },
-      "onError": "continueErrorOutput",
-      "webhookId": "a9b8c7d6-5e4f-4321-8765-0fedcba98761"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {

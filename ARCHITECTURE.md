@@ -72,15 +72,15 @@ customers ──< appointments >────────────┘
                    └──< notifications (confirmation | reminder | follow_up)
 ```
 
-## Next steps (phase 2: job scheduling)
+## Phase 2: job scheduling
 
-The data model is ready for it. Add a `technicians` table (name, phone, active), a `technician_id` on appointments, and a `technician_unavailable` table for days off. Then:
+Technicians replace the fixed "crews" number. A start time is free when, for the whole job, fewer jobs overlap than technicians work that day, and at least one working technician has no overlapping job. A BEFORE INSERT trigger gives each new booking the free technician with the fewest jobs that day; `book_appointment()` itself did not change, and its day lock still prevents double booking.
 
-- Change the capacity check from "crews" to "free technicians at that hour".
-- Add an n8n workflow that runs each evening, assigns tomorrow's jobs (fewest jobs first, nearest barangay next), and emails or texts each technician their schedule.
-- Add a technician view in the admin with today's route and a "Done" button, which also triggers the follow up.
+`lamig.schedule_emails` is a second outbox. `claim_schedule_emails()` (n8n, every 15 minutes) first assigns open jobs for today and tomorrow, queues tomorrow's schedules after `schedule_send_hour`, and claims due rows like the notification outbox. An AFTER trigger on appointments re queues an already sent schedule when a job is added, cancelled, moved or reassigned, so technicians get an updated list; marking a job done does not.
 
-Other ideas: customer self service cancel and reschedule by reference and email, SMS reminders through a local provider, and a weekly report workflow (bookings, chats handed off, failed emails).
+Technicians sign in with Supabase Auth (`lamig.staff.role = 'technician'`, linked from `lamig.technicians.user_id`). `is_staff()` now means admin; row level security lets a technician read only their own jobs and those jobs' customers. Details and setup: PHASE2.md.
+
+Ideas for later: route ordering by area, SMS schedules, customer self service reschedule.
 
 ## Development tools
 

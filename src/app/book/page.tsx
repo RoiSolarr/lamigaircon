@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { BookingForm } from "@/components/BookingForm";
 import { ChatWidget } from "@/components/ChatWidget";
+import { HeaderAccount } from "@/components/HeaderAccount";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { getBusiness } from "@/lib/data";
 import { addDays, firstBookableDay, manilaToday, nextOpenDays } from "@/lib/format";
+import { staffDb as userDb } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Book a cleaning" };
 export const dynamic = "force-dynamic";
@@ -20,12 +22,22 @@ export default async function BookPage({ searchParams }: { searchParams: Search 
   const initialDate = params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date) ? params.date : "";
   const initialTime = params.time && /^\d{2}:\d{2}$/.test(params.time) ? params.time : "";
 
+  // Signed in customers get their name, phone and email filled in.
+  const db = await userDb();
+  const { data: claims } = await db.auth.getClaims();
+  const { data: account } = claims?.claims
+    ? await db.from("customer_accounts").select("full_name, phone, email").eq("user_id", claims.claims.sub).maybeSingle()
+    : { data: null };
+  const initialDetails = account
+    ? { name: account.full_name as string, phone: account.phone as string, email: account.email as string }
+    : undefined;
+
   return (
     <>
-      <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 pt-4 sm:px-6">
+      <SiteHeader account={<HeaderAccount />} />
+      <main className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 lg:pt-14">
         <h1 className="display-wide text-4xl sm:text-5xl">Book a cleaning</h1>
-        <p className="mt-4 max-w-[36rem] text-lg text-steel">
+        <p className="mt-4 max-w-[38rem] text-lg text-steel">
           One booking covers one unit. You get a confirmation email right away and a reminder the day before.
         </p>
         <BookingForm
@@ -36,6 +48,7 @@ export default async function BookPage({ searchParams }: { searchParams: Search 
           initialService={initialService}
           initialDate={initialDate}
           initialTime={initialTime}
+          initialDetails={initialDetails}
         />
       </main>
       <SiteFooter name={settings.name} phone={settings.phone} email={settings.email} />

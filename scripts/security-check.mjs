@@ -35,7 +35,8 @@ for (const table of ["business_settings", "services", "faqs"]) {
 }
 
 // Private data is not
-for (const table of ["customers", "appointments", "notifications", "conversations", "messages", "staff"]) {
+for (const table of ["customers", "appointments", "notifications", "conversations", "messages", "staff",
+                     "technicians", "technician_days_off", "schedule_emails", "customer_accounts"]) {
   await cannotRead(table);
 }
 
@@ -73,6 +74,17 @@ await cannotCall("request_human", { p_conversation_id: anyId, p_name: "x", p_con
 await cannotCall("set_appointment_status", { p_appointment_id: anyId, p_status: "cancelled" });
 await cannotCall("retry_notification", { p_notification_id: 1 });
 await cannotCall("resolve_handoff", { p_conversation_id: anyId });
+await cannotCall("claim_schedule_emails", { p_limit: 1 });
+await cannotCall("mark_schedule_sent", { p_schedule_id: 1 });
+await cannotCall("assign_open_jobs", { p_from: "2099-01-01", p_to: "2099-01-01" });
+await cannotCall("set_appointment_technician", { p_appointment_id: anyId, p_technician_id: null });
+await cannotCall("save_technician", { p_technician_id: null, p_full_name: "x", p_phone: "", p_email: "" });
+await cannotCall("set_day_off", { p_technician_id: anyId, p_date: "2099-01-01", p_off: true, p_reason: null });
+await cannotCall("link_technician_login", { p_technician_id: anyId, p_email: "x@example.com" });
+await cannotCall("staff_reply", { p_conversation_id: anyId, p_message: "x" });
+await cannotCall("set_ai_paused", { p_conversation_id: anyId, p_paused: true });
+await cannotCall("save_my_account", { p_full_name: "Some One", p_phone: "" });
+await cannotCall("claim_conversation", { p_conversation_id: anyId });
 
 console.log(failed ? `\n${failed} check(s) FAILED` : "\nAll checks passed");
 process.exit(failed ? 1 : 0);

@@ -17,6 +17,11 @@
 
   --font-display: "Archivo Variable", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", system-ui, sans-serif;
+
+  /* Shadows tinted with ink, so they read as cold air rather than grey smudge. */
+  --shadow-soft: 0 1px 2px rgba(10, 37, 48, 0.06), 0 4px 16px -6px rgba(10, 37, 48, 0.12);
+  --shadow-lift: 0 2px 4px rgba(10, 37, 48, 0.06), 0 18px 40px -18px rgba(10, 37, 48, 0.35);
+  --shadow-remote: 0 30px 70px -30px rgba(10, 37, 48, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 @layer base {
@@ -25,11 +30,13 @@
     color: var(--color-ink);
     font-family: var(--font-body);
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
   }
   body {
     min-height: 100dvh;
     font-size: 1.0625rem;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3 {
     font-family: var(--font-display);
@@ -51,6 +58,13 @@
     font-family: var(--font-display);
     font-stretch: 125%;
     font-weight: 850;
+    letter-spacing: -0.015em;
+  }
+  /* Normal width display type for page and panel titles. */
+  .title {
+    font-family: var(--font-display);
+    font-stretch: 100%;
+    font-weight: 750;
     letter-spacing: -0.01em;
   }
   /* Narrow numerals for times and prices, like an aircon remote's readout. */
@@ -61,6 +75,7 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.01em;
   }
+
   .btn {
     display: inline-flex;
     align-items: center;
@@ -70,28 +85,86 @@
     padding: 0.75rem 1.4rem;
     font-weight: 700;
     line-height: 1.2;
-    transition: background-color 120ms, color 120ms;
+    white-space: nowrap;
+    transition: background-color 140ms, color 140ms, border-color 140ms, box-shadow 140ms, transform 80ms;
   }
-  .btn-sun { background: var(--color-sun); color: var(--color-deep); }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn-sun { background: var(--color-sun); color: var(--color-deep); box-shadow: inset 0 -2px 0 rgba(10, 37, 48, 0.12); }
   .btn-sun:hover { background: var(--color-sun-deep); }
   .btn-ink { background: var(--color-ink); color: var(--color-frost); }
   .btn-ink:hover { background: var(--color-deep); }
   .btn-line { border: 1.5px solid var(--color-ink); color: var(--color-ink); }
   .btn-line:hover { background: var(--color-ink); color: var(--color-frost); }
+  .btn-quiet { color: var(--color-ink); border: 1.5px solid var(--color-mist); background: white; }
+  .btn-quiet:hover { border-color: var(--color-ink); }
+  .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.9rem; }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .field {
     width: 100%;
     border: 1.5px solid var(--color-mist);
     background: white;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 0.7rem 0.85rem;
     color: var(--color-ink);
+    transition: border-color 140ms, box-shadow 140ms;
   }
-  .field:focus { border-color: var(--color-ink); outline: none; box-shadow: 0 0 0 3px var(--color-sun); }
+  .field::placeholder { color: color-mix(in oklab, var(--color-steel) 70%, white); }
+  .field:hover { border-color: color-mix(in oklab, var(--color-mist) 50%, var(--color-steel)); }
+  .field:focus { border-color: var(--color-ink); outline: none; box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-sun) 70%, transparent); }
+  .field[aria-invalid="true"] { border-color: var(--color-bad); }
   .label { display: block; font-weight: 700; margin-bottom: 0.35rem; }
+  .hint { margin-top: 0.35rem; font-size: 0.9rem; color: var(--color-steel); }
+
+  /* A white surface on the frost background. */
+  .panel {
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--shadow-soft);
+    outline: 1px solid color-mix(in oklab, var(--color-mist) 70%, transparent);
+    outline-offset: -1px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.15rem 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* Initials in a circle, for people in the admin area. */
+  .avatar {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    background: var(--color-ice);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-weight: 750;
+    font-size: 0.95rem;
+  }
+
+  /* The fine grille lines of an aircon vent, used once on the remote panel. */
+  .vent {
+    background-image: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 7px);
+  }
 }
 
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-rise { animation: rise 220ms ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

@@ -38,4 +38,4 @@ export type BookingResult =
   | { ok: true; ref: string; service: string; when: string; starts_at: string; price_php: number; email: string }
   | { ok: false; error: string };
 
-export type ChatMessage = { role: "user" | "assistant"; content: string };
+export type ChatMessage = { role: "user" | "assistant" | "staff"; content: string; id?: number };

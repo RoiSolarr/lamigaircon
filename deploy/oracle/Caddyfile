@@ -1,0 +1,5 @@
+# Caddy gets and renews the HTTPS certificate automatically.
+{$N8N_DOMAIN} {
+	encode gzip
+	reverse_proxy n8n:5678
+}

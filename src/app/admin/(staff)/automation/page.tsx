@@ -1,4 +1,6 @@
-import { retryNotification } from "@/app/admin/actions";
+import { retryNotification, retryScheduleEmail } from "@/app/admin/actions";
+import { AdminPageHeader, StatStrip } from "@/components/AdminPageHeader";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { formatDateTime } from "@/lib/format";
 import { staffDb } from "@/lib/supabase/server";
 
@@ -35,7 +37,19 @@ function ago(iso: string) {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-export default async function AutomationPage() {
+type ScheduleEmail = {
+  id: number;
+  work_date: string;
+  status: "pending" | "sending" | "sent" | "failed" | "skipped";
+  send_count: number;
+  attempts: number;
+  last_error: string | null;
+  sent_at: string | null;
+  technicians: { full_name: string; email: string | null } | null;
+};
+
+export default async function AutomationPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error: actionError } = await searchParams;
   const db = await staffDb();
   const now = new Date();
   const dayAgo = new Date(now.getTime() - 24 * 3600_000).toISOString();
@@ -60,6 +74,13 @@ export default async function AutomationPage() {
     db.from("notifications").select("sent_at").eq("status", "sent").order("sent_at", { ascending: false }).limit(1).maybeSingle(),
     db.from("messages").select("id", { count: "exact", head: true }).eq("role", "user").gte("created_at", dayAgo),
   ]);
+  const { data: scheduleData } = await db
+    .from("schedule_emails")
+    .select("id, work_date, status, send_count, attempts, last_error, sent_at, technicians(full_name, email)")
+    .order("work_date", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(30);
+  const schedules = (scheduleData ?? []) as unknown as ScheduleEmail[];
 
   if (recent.error) throw new Error(recent.error.message);
   const rows = (recent.data ?? []) as unknown as Notification[];
@@ -68,22 +89,24 @@ export default async function AutomationPage() {
   const stats = [
     { label: "Sent in the last 24 hours", value: sent24.count ?? 0 },
     { label: "Waiting to send", value: pending.count ?? 0, note: "includes future reminders and follow ups" },
-    { label: "Failed after 3 tries", value: failed.count ?? 0, bad: (failed.count ?? 0) > 0 },
+    { label: "Failed after 3 tries", value: failed.count ?? 0, tone: (failed.count ?? 0) > 0 ? ("bad" as const) : undefined },
     { label: "Chat messages in 24 hours", value: chats24.count ?? 0 },
   ];
 
   return (
     <>
-      <h1 className="text-3xl font-bold" style={{ fontStretch: "100%" }}>Automation</h1>
-      <p className="mt-1 max-w-3xl text-steel">
+      <ErrorBanner message={actionError} />
+      <AdminPageHeader title="Automation">
         The n8n Notifications workflow sends these emails. It runs every 5 minutes and right after each website booking.
         This page is how you check that it is working.
-      </p>
+      </AdminPageHeader>
 
       <div
         role="status"
-        className={`mt-6 rounded-2xl p-5 ${overdueCount > 0 ? "bg-bad/10 text-bad" : "bg-ok/10 text-ok"}`}
+        className={`mt-8 flex items-start gap-4 rounded-2xl p-5 ring-1 ${overdueCount > 0 ? "bg-bad/8 text-bad ring-bad/25" : "bg-ok/8 text-ok ring-ok/25"}`}
       >
+        <span aria-hidden className={`mt-1 h-3 w-3 shrink-0 rounded-full ${overdueCount > 0 ? "bg-bad" : "bg-ok ring-4 ring-ok/20"}`} />
+        <div>
         {overdueCount > 0 ? (
           <>
             <p className="font-bold">
@@ -99,25 +122,18 @@ export default async function AutomationPage() {
             On schedule. {lastSent.data?.sent_at ? `Last email sent ${ago(lastSent.data.sent_at)}.` : "No email sent yet."}
           </p>
         )}
+        </div>
       </div>
 
-      <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl bg-white p-5 ring-1 ring-mist">
-            <dt className="text-steel">{s.label}</dt>
-            <dd className={`readout mt-1 text-4xl ${s.bad ? "text-bad" : ""}`}>{s.value}</dd>
-            {s.note && <dd className="text-sm text-steel">{s.note}</dd>}
-          </div>
-        ))}
-      </dl>
+      <StatStrip stats={stats} />
 
-      <h2 className="mt-12 text-xl font-bold" style={{ fontStretch: "100%" }}>Recent emails</h2>
+      <h2 className="title mt-12 text-xl">Recent emails</h2>
       {rows.length === 0 ? (
         <p className="mt-3 text-steel">No emails yet. Make a booking on the website and the confirmation shows up here.</p>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-2xl bg-white ring-1 ring-mist">
+        <div className="panel mt-4 overflow-x-auto">
           <table className="w-full min-w-[46rem] text-left">
-            <thead className="border-b border-mist text-steel">
+            <thead className="border-b border-mist/70 bg-frost/60 text-sm text-steel">
               <tr>
                 <th scope="col" className="px-4 py-3 font-normal">Email</th>
                 <th scope="col" className="px-4 py-3 font-normal">Booking</th>
@@ -126,7 +142,7 @@ export default async function AutomationPage() {
                 <th scope="col" className="px-4 py-3 font-normal"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-mist">
+            <tbody className="divide-y divide-mist/70">
               {rows.map((n) => (
                 <tr key={n.id} className="align-top">
                   <td className="px-4 py-3">
@@ -146,7 +162,58 @@ export default async function AutomationPage() {
                     {n.status === "failed" && (
                       <form action={retryNotification}>
                         <input type="hidden" name="id" value={n.id} />
-                        <button className="btn btn-line px-3 py-1 text-sm">Send again</button>
+                        <button className="btn btn-quiet btn-sm">Send again</button>
+                      </form>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 className="title mt-12 text-xl">Technician schedules</h2>
+      <p className="mt-1 max-w-3xl text-steel">
+        The n8n Technician Schedules workflow sends each technician their jobs for tomorrow every evening, and an
+        updated schedule when a job changes after that.
+      </p>
+      {schedules.length === 0 ? (
+        <p className="mt-3 text-steel">No schedule emails yet. They start in the evening for technicians with jobs the next day.</p>
+      ) : (
+        <div className="panel mt-4 overflow-x-auto">
+          <table className="w-full min-w-[40rem] text-left">
+            <thead className="border-b border-mist/70 bg-frost/60 text-sm text-steel">
+              <tr>
+                <th scope="col" className="px-4 py-3 font-normal">Technician</th>
+                <th scope="col" className="px-4 py-3 font-normal">Work day</th>
+                <th scope="col" className="px-4 py-3 font-normal">Status</th>
+                <th scope="col" className="px-4 py-3 font-normal"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-mist/70">
+              {schedules.map((e) => (
+                <tr key={e.id} className="align-top">
+                  <td className="px-4 py-3">
+                    <p className="font-bold">{e.technicians?.full_name}</p>
+                    <p className="text-sm break-all text-steel">{e.technicians?.email ?? "no email"}</p>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {new Date(`${e.work_date}T00:00:00Z`).toLocaleDateString("en-PH", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className={`font-bold ${STATUS[e.status]}`}>
+                      {e.status === "sent" && e.sent_at
+                        ? `Sent ${ago(e.sent_at)}${e.send_count > 1 ? `, ${e.send_count} versions` : ""}`
+                        : e.status[0].toUpperCase() + e.status.slice(1)}
+                    </p>
+                    {e.last_error && <p className="max-w-xs text-sm text-steel">{e.last_error}</p>}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {(e.status === "failed" || e.status === "skipped") && (
+                      <form action={retryScheduleEmail}>
+                        <input type="hidden" name="id" value={e.id} />
+                        <button className="btn btn-quiet btn-sm">Send again</button>
                       </form>
                     )}
                   </td>

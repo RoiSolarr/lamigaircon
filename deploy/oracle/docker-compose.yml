@@ -1,0 +1,49 @@
+# n8n for the Lamig AI receptionist, on an Oracle Cloud Always Free VM.
+#   caddy: HTTPS on ports 80/443 with a free Let's Encrypt certificate
+#   n8n:   the workflow engine, only reachable through Caddy
+# n8n keeps its own data (workflows, credentials, executions) in a SQLite file
+# on the VM's disk, so it does not depend on Supabase. Only the workflow's
+# Postgres nodes talk to Supabase (the lamig schema).
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      N8N_DOMAIN: ${N8N_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - n8n
+
+  n8n:
+    image: n8nio/n8n:${N8N_VERSION:-2.45.4}
+    restart: unless-stopped
+    environment:
+      N8N_HOST: ${N8N_DOMAIN}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://${N8N_DOMAIN}/
+      N8N_PROXY_HOPS: "1"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      GENERIC_TIMEZONE: Asia/Manila
+      TZ: Asia/Manila
+      DB_TYPE: sqlite
+      DB_SQLITE_POOL_SIZE: "2"
+      N8N_RUNNERS_ENABLED: "true"
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "168"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  caddy_data:
+  caddy_config:
+  n8n_data:

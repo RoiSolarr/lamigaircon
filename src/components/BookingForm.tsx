@@ -14,6 +14,7 @@ type Props = {
   initialService: string;
   initialDate: string;
   initialTime: string;
+  initialDetails?: { name: string; phone: string; email: string };
 };
 
 type Details = { name: string; phone: string; email: string; address: string; notes: string; company: string };
@@ -23,7 +24,14 @@ export function BookingForm(props: Props) {
   const [service, setService] = useState(props.initialService || services[0]?.code || "");
   const [date, setDate] = useState(props.initialDate || days[0] || "");
   const [time, setTime] = useState(props.initialTime);
-  const [details, setDetails] = useState<Details>({ name: "", phone: "", email: "", address: "", notes: "", company: "" });
+  const [details, setDetails] = useState<Details>({
+    name: props.initialDetails?.name ?? "",
+    phone: props.initialDetails?.phone ?? "",
+    email: props.initialDetails?.email ?? "",
+    address: "",
+    notes: "",
+    company: "",
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [booked, setBooked] = useState<Extract<BookingResult, { ok: true }> | null>(null);
@@ -68,11 +76,17 @@ export function BookingForm(props: Props) {
 
   if (booked) {
     return (
-      <section className="mt-10 rounded-[28px] bg-ink p-6 text-frost sm:p-8" aria-live="polite">
-        <h2 className="text-2xl font-bold" style={{ fontStretch: "100%" }}>You are booked</h2>
+      <section className="animate-rise mt-10 max-w-3xl rounded-[32px] bg-ink p-6 text-frost shadow-[var(--shadow-remote)] sm:p-9" aria-live="polite">
+        <p className="flex items-center gap-2 font-bold text-ice">
+          <span aria-hidden className="grid h-7 w-7 place-items-center rounded-full bg-ok text-white">
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6.2 5 8.5l4.5-5" /></svg>
+          </span>
+          Booking confirmed
+        </p>
+        <h2 className="title mt-4 text-3xl">You are booked</h2>
         <p className="readout mt-4 text-5xl text-sun sm:text-6xl">{booked.ref}</p>
         <p className="mt-1 text-sm text-mist">Your booking reference</p>
-        <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+        <dl className="mt-6 grid gap-x-6 gap-y-4 rounded-2xl bg-deep p-5 ring-1 ring-white/10 sm:grid-cols-2">
           <div>
             <dt className="text-sm text-mist">Service</dt>
             <dd className="font-bold">{booked.service}</dd>
@@ -109,19 +123,20 @@ export function BookingForm(props: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="mt-10 space-y-12" noValidate={false}>
-      <fieldset className="min-w-0">
-        <legend className="flex items-baseline gap-3 text-2xl font-bold" style={{ fontStretch: "100%" }}>
-          <span className="readout text-3xl text-sun-deep">1</span> Service
+    <form onSubmit={submit} className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-8" noValidate={false}>
+      <div className="min-w-0 space-y-6">
+      <fieldset className="panel min-w-0 p-5 sm:p-7">
+        <legend className="title float-left flex w-full items-center gap-3 text-2xl">
+          <span aria-hidden className="readout grid h-9 w-9 place-items-center rounded-full bg-ink text-xl text-frost">1</span> Service
         </legend>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="clear-both grid gap-3 pt-5 sm:grid-cols-2">
           {services.map((s) => {
             const on = s.code === service;
             return (
               <label
                 key={s.code}
-                className={`flex cursor-pointer flex-col rounded-2xl border-[1.5px] bg-white p-4 transition-colors ${
-                  on ? "border-ink ring-2 ring-ink" : "border-mist hover:border-steel"
+                className={`relative flex cursor-pointer flex-col rounded-2xl border-[1.5px] p-4 transition-colors has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-sun ${
+                  on ? "border-ink bg-frost ring-1 ring-ink" : "border-mist bg-white hover:border-steel"
                 }`}
               >
                 <input
@@ -135,7 +150,10 @@ export function BookingForm(props: Props) {
                   }}
                   className="sr-only"
                 />
-                <span className="font-bold">{s.name}</span>
+                <span aria-hidden className={`absolute top-4 right-4 grid h-5 w-5 place-items-center rounded-full border-[1.5px] ${on ? "border-ink bg-ink text-frost" : "border-mist"}`}>
+                  {on && <span className="h-2 w-2 rounded-full bg-sun" />}
+                </span>
+                <span className="pr-7 font-bold">{s.name}</span>
                 <span className="mt-1 text-sm text-steel">about {formatHours(s.duration_minutes)}</span>
                 <span className="readout mt-2 text-2xl">{formatPeso(s.price_php)}</span>
               </label>
@@ -144,11 +162,11 @@ export function BookingForm(props: Props) {
         </div>
       </fieldset>
 
-      <fieldset className="min-w-0">
-        <legend className="flex items-baseline gap-3 text-2xl font-bold" style={{ fontStretch: "100%" }}>
-          <span className="readout text-3xl text-sun-deep">2</span> Day and time
+      <fieldset className="panel min-w-0 p-5 sm:p-7">
+        <legend className="title float-left flex w-full items-center gap-3 text-2xl">
+          <span aria-hidden className="readout grid h-9 w-9 place-items-center rounded-full bg-ink text-xl text-frost">2</span> Day and time
         </legend>
-        <div className="mt-4">
+        <div className="clear-both pt-5">
           <DayPicker
             days={days}
             value={date}
@@ -212,11 +230,11 @@ export function BookingForm(props: Props) {
         </div>
       </fieldset>
 
-      <fieldset className="min-w-0">
-        <legend className="flex items-baseline gap-3 text-2xl font-bold" style={{ fontStretch: "100%" }}>
-          <span className="readout text-3xl text-sun-deep">3</span> Your details
+      <fieldset className="panel min-w-0 p-5 sm:p-7">
+        <legend className="title float-left flex w-full items-center gap-3 text-2xl">
+          <span aria-hidden className="readout grid h-9 w-9 place-items-center rounded-full bg-ink text-xl text-frost">3</span> Your details
         </legend>
-        <div className="mt-4 grid gap-5 sm:grid-cols-2">
+        <div className="clear-both grid gap-5 pt-5 sm:grid-cols-2">
           <div>
             <label htmlFor="name" className="label">Full name</label>
             <input id="name" required minLength={2} maxLength={100} autoComplete="name" value={details.name} onChange={set("name")} className="field" />
@@ -265,23 +283,38 @@ export function BookingForm(props: Props) {
           </div>
         </div>
       </fieldset>
+      </div>
 
-      <div className="rounded-[28px] bg-ink p-6 text-frost sm:p-7">
-        <h2 className="text-xl font-bold" style={{ fontStretch: "100%" }}>Summary</h2>
-        <p className="mt-2 text-lg">
-          {selected ? selected.name : "Pick a service"}
-          {chosen ? `, ${dateLabel} at ${chosen.label}` : ", pick a time"}
-        </p>
-        {selected && <p className="readout mt-2 text-4xl text-sun">{formatPeso(selected.price_php)}</p>}
+      <aside className="relative overflow-hidden rounded-[28px] bg-ink p-6 text-frost shadow-[var(--shadow-remote)] lg:sticky lg:top-24">
+        <div aria-hidden className="vent absolute inset-x-0 top-0 h-8" />
+        <h2 className="title relative text-xl">Your booking</h2>
+        <dl className="relative mt-4 divide-y divide-white/10 rounded-2xl bg-deep px-4 ring-1 ring-white/10">
+          <div className="py-3">
+            <dt className="text-sm text-mist">Service</dt>
+            <dd className="font-bold">{selected ? selected.name : "Pick a service"}</dd>
+          </div>
+          <div className="py-3">
+            <dt className="text-sm text-mist">When</dt>
+            <dd className="font-bold">{chosen ? `${dateLabel} at ${chosen.label}` : "Pick a time"}</dd>
+          </div>
+          <div className="flex items-end justify-between gap-3 py-3">
+            <div>
+              <dt className="text-sm text-mist">Price</dt>
+              <dd className="text-sm text-mist">pay after the job</dd>
+            </div>
+            {selected && <dd className="readout text-4xl leading-none text-sun">{formatPeso(selected.price_php)}</dd>}
+          </div>
+        </dl>
         {error && (
           <p className="mt-4 rounded-xl bg-white px-4 py-3 text-bad" role="alert">
             {error}
           </p>
         )}
-        <button type="submit" className="btn btn-sun mt-6 w-full text-lg sm:w-auto" disabled={submitting}>
+        <button type="submit" className="btn btn-sun mt-5 w-full py-3.5 text-lg" disabled={submitting}>
           {submitting ? "Booking…" : "Book this time"}
         </button>
-      </div>
+        <p className="mt-3 text-center text-sm text-mist">A confirmation email comes right after.</p>
+      </aside>
     </form>
   );
 }

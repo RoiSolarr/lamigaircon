@@ -63,9 +63,9 @@ export async function POST(request: NextRequest) {
     after(async () => {
       try {
         const res = await callN8n(notifyUrl, { reason: "new_booking", ref: result.ref }, 20_000);
-if (!res.ok) {
-  console.warn(`n8n notify webhook answered ${res.status}. Check N8N_NOTIFY_WEBHOOK_URL, N8N_WEBHOOK_SECRET and that the workflow is published.`);
-}
+        if (!res.ok) {
+          console.warn(`n8n notify webhook answered ${res.status}. Check N8N_NOTIFY_WEBHOOK_URL, N8N_WEBHOOK_SECRET and that the workflow is published.`);
+        }
       } catch (err) {
         console.warn("Could not reach the n8n notify webhook", err);
       }

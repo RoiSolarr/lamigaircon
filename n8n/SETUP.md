@@ -71,7 +71,7 @@ Then in each workflow:
 
 1. Open every node with a warning icon and pick the matching credential from step 2.
 2. **Lamig Notifications > Send email**: change **From Email** to `Lamig Aircon Cleaning <your-address@gmail.com>`. Gmail only sends from your own address.
-3. **Lamig Receptionist > Gemini**: check the model. It is set to `models/gemini-2.5-flash`. If that is not in the list, pick the newest Flash model (the one you use in other projects works).
+3. **Lamig Receptionist > Gemini**: check the model. It is set to `models/gemini-3.8-flash`. Google retires older models for new users (2.5 Flash returns a 404), so if a run fails with "model not found", pick the newest Flash model in the dropdown.
 4. Save, then click **Publish** at the top. A webhook only listens on its Production URL while the workflow is published.
 
 ## 4. Connect the website
