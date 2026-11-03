@@ -28,6 +28,13 @@ export function formatOpenDays(days: number[]) {
   return sorted.map((d) => DAY_NAMES[d - 1]).join(", ");
 }
 
+// The days not in open_days, as a sentence: "Closed on Sundays and holidays."
+export function formatClosedDays(openDays: number[]) {
+  const closed = [1, 2, 3, 4, 5, 6, 7].filter((d) => !openDays.includes(d)).map((d) => `${DAY_NAMES[d - 1]}s`);
+  if (closed.length === 0) return "Closed on holidays.";
+  return `Closed on ${[...closed, "holidays"].join(", ").replace(/, ([^,]*)$/, " and $1")}.`;
+}
+
 // Today's date in Manila as YYYY-MM-DD, whatever timezone the server runs in.
 export function manilaToday(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE }).format(new Date());

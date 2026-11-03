@@ -4,7 +4,7 @@ import { FreeTimes } from "@/components/FreeTimes";
 import { HeaderAccount } from "@/components/HeaderAccount";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { getBusiness } from "@/lib/data";
-import { formatClock, formatHours, formatOpenDays, formatPeso, firstBookableDay, nextOpenDays } from "@/lib/format";
+import { formatClock, formatClosedDays, formatHours, formatOpenDays, formatPeso, firstBookableDay, nextOpenDays } from "@/lib/format";
 
 // Prices, hours and FAQs come from Supabase on each visit, so edits in the
 // table editor show up right away (the AI receptionist reads the same rows).
@@ -25,7 +25,7 @@ const visitSteps = [
   },
   {
     title: "The cleaning",
-    body: "A two person crew arrives with covers, a pressure washer and everything else needed.",
+    body: "Your technician arrives with covers, a pressure washer and everything else needed.",
   },
   {
     title: "Follow up",
@@ -49,6 +49,7 @@ export default async function Home() {
     7,
   );
   const hours = `${formatOpenDays(settings.open_days)}, ${formatClock(settings.open_time)} to ${formatClock(settings.close_time)}`;
+  const closedText = formatClosedDays(settings.open_days);
   const upcomingHolidays = closedDates.slice(0, 4);
 
   return (
@@ -75,7 +76,7 @@ export default async function Home() {
                 <OpenChatButton className="btn btn-quiet px-6 text-lg">Ask the receptionist</OpenChatButton>
               </div>
               <p className="mt-6 text-steel">
-                <span className="font-bold text-ink">Open {hours}.</span> Closed on Sundays and holidays.
+                <span className="font-bold text-ink">Open {hours}.</span> {closedText}
               </p>
             </div>
             <FreeTimes services={services} days={days} />
@@ -167,7 +168,7 @@ export default async function Home() {
             </div>
             <div className="rounded-3xl bg-white/[0.06] p-6 ring-1 ring-white/10 sm:p-7">
               <h3 className="title text-xl">Hours</h3>
-              <p className="mt-2 text-mist">{hours}. Closed on Sundays and holidays.</p>
+              <p className="mt-2 text-mist">{hours}. {closedText}</p>
               {upcomingHolidays.length > 0 && (
                 <>
                   <h3 className="title mt-7 text-xl">Upcoming days off</h3>
