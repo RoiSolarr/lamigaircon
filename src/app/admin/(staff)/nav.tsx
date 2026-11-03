@@ -19,6 +19,7 @@ export function AdminNav({ waiting, vertical = false }: { waiting: number; verti
     { href: "/admin", label: "Appointments" },
     { href: "/admin/history", label: "Booking history" },
     { href: "/admin/inbox", label: "Inbox", badge: waiting },
+    { href: "/admin/customers", label: "Customers" },
     { href: "/admin/technicians", label: "Technicians" },
     { href: "/admin/automation", label: "Automation" },
   ];

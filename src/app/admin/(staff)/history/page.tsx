@@ -151,7 +151,13 @@ export default async function HistoryPage({
                   </p>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold">{r.customers?.name ?? "Unknown customer"}</p>
+                  {r.customers ? (
+                    <Link href={`/admin/customers?email=${encodeURIComponent(r.customers.email)}`} className="font-bold underline-offset-2 hover:underline">
+                      {r.customers.name}
+                    </Link>
+                  ) : (
+                    <p className="font-bold">Unknown customer</p>
+                  )}
                   <p className="text-sm text-steel">{[r.customers?.phone, r.customers?.email].filter(Boolean).join(", ")}</p>
                   <p className="text-sm text-steel">{r.address}</p>
                 </div>
