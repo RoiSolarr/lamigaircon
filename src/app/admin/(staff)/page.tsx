@@ -85,11 +85,8 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
     <>
       <ErrorBanner message={actionError} />
       <NoticeBanner message={notice} />
-      <AdminPageHeader
-        title="Appointments"
-        actions={<Link href="/admin/history" className="btn btn-quiet btn-sm">Booking history</Link>}
-      >
-        Open jobs from the website and the AI receptionist. Done, cancelled and no show jobs move to Booking history.
+      <AdminPageHeader title="Appointments">
+        Open jobs from the website and the AI receptionist. Done and cancelled jobs move to Booking history.
       </AdminPageHeader>
 
       <StatStrip
@@ -206,7 +203,6 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
                   <StatusActions
                     options={[
                       { value: "completed", label: "Mark done", question: `Mark ${r.ref} as done?`, confirm: "Yes, it's done", primary: true },
-                      { value: "no_show", label: "No show", question: "Nobody was home?", confirm: "Yes, no show" },
                       { value: "cancelled", label: "Cancel", question: `Cancel ${r.ref}?`, confirm: "Yes, cancel", danger: true },
                     ]}
                   />

@@ -7,7 +7,7 @@ import { customerHref, dateOnly, initials, lastActivity, loadPeople, spent } fro
 
 export const metadata: Metadata = { title: "Customers" };
 
-const FILTERS = { all: "All", accounts: "With account", guests: "Guests" } as const;
+const FILTERS = { all: "All", accounts: "With account" } as const;
 
 // Everyone who booked or made an account, one row per email.
 // Click a name to open that customer's page.
@@ -22,7 +22,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   const everyone = await loadPeople();
   const list = everyone.filter(
     (p) =>
-      (show === "all" || (show === "accounts" ? p.account : !p.account)) &&
+      (show === "all" || p.account) &&
       (!q || [p.name, p.email, p.phone].some((v) => v.toLowerCase().includes(q))),
   );
 
