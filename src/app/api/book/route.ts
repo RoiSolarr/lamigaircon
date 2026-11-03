@@ -2,6 +2,7 @@ import { after, NextResponse, type NextRequest } from "next/server";
 import { n8n } from "@/lib/env";
 import { callN8n } from "@/lib/n8n";
 import { publicDb } from "@/lib/supabase/public";
+import { staffDb as userDb } from "@/lib/supabase/server";
 import type { BookingResult } from "@/lib/types";
 
 type BookingRequest = {
@@ -54,6 +55,17 @@ export async function POST(request: NextRequest) {
   const result = data as BookingResult;
   if (!result.ok) {
     return NextResponse.json(result, { status: 422 });
+  }
+
+  // Signed in customers see this booking in their history on the account page.
+  try {
+    const db = await userDb();
+    const { data: claims } = await db.auth.getClaims();
+    if (claims?.claims) {
+      await db.rpc("link_my_booking", { p_ref: result.ref, p_email: text(body.email, 254) });
+    }
+  } catch (err) {
+    console.warn("Could not add the booking to the account history", err);
   }
 
   const notifyUrl = n8n.notifyUrl();

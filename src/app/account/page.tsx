@@ -5,6 +5,7 @@ import { AccountForm, SignOutButton } from "@/components/AccountForm";
 import { ChatWidget } from "@/components/ChatWidget";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { HeaderAccount } from "@/components/HeaderAccount";
+import { MyBookings, type MyBooking } from "@/components/MyBookings";
 import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { getBusiness } from "@/lib/data";
 import { staffDb as userDb } from "@/lib/supabase/server";
@@ -20,8 +21,8 @@ const benefits = [
   "The booking form fills in your name, number and email.",
 ];
 
-export default async function AccountPage({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string }> }) {
-  const { error, saved } = await searchParams;
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string; linked?: string; linkError?: string }> }) {
+  const { error, saved, linked, linkError } = await searchParams;
   const { settings } = await getBusiness();
   const db = await userDb();
   const { data } = await db.auth.getClaims();
@@ -31,6 +32,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     ? await db.from("customer_accounts").select("full_name, phone, email").eq("user_id", claims.sub).maybeSingle()
     : { data: null };
   const account = accountData as Account | null;
+  const { data: bookingData } = account ? await db.rpc("my_bookings") : { data: null };
+  const bookings = (bookingData ?? []) as MyBooking[];
 
   // Details given at sign up, used when the account row is not saved yet.
   const meta = (claims?.user_metadata ?? {}) as { full_name?: string; phone?: string };
@@ -130,6 +133,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                 </div>
               </form>
             </div>
+
+            {account && <MyBookings bookings={bookings} linked={linked} linkError={linkError} />}
           </>
         )}
       </main>

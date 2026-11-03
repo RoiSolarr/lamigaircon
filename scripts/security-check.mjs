@@ -36,7 +36,7 @@ for (const table of ["business_settings", "services", "faqs"]) {
 
 // Private data is not
 for (const table of ["customers", "appointments", "notifications", "conversations", "messages", "staff",
-                     "technicians", "technician_days_off", "schedule_emails", "customer_accounts"]) {
+                     "technicians", "technician_days_off", "schedule_emails", "customer_accounts", "account_bookings"]) {
   await cannotRead(table);
 }
 
@@ -85,6 +85,8 @@ await cannotCall("staff_reply", { p_conversation_id: anyId, p_message: "x" });
 await cannotCall("set_ai_paused", { p_conversation_id: anyId, p_paused: true });
 await cannotCall("save_my_account", { p_full_name: "Some One", p_phone: "" });
 await cannotCall("claim_conversation", { p_conversation_id: anyId });
+await cannotCall("link_my_booking", { p_ref: "LMG-TEST01", p_email: "x@example.com" });
+await cannotCall("my_bookings", {});
 
 console.log(failed ? `\n${failed} check(s) FAILED` : "\nAll checks passed");
 process.exit(failed ? 1 : 0);
