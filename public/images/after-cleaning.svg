@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" role="img" aria-labelledby="t">
+  <title id="t">Aircon filter after cleaning, clear and bright</title>
+  <!-- Placeholder illustration. Replace with a real after photo (keep the 400 by 260 shape). -->
+  <defs>
+    <pattern id="mesh" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M0 0h12M0 0v12" stroke="#c3d6df" stroke-width="1.4"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="260" rx="24" fill="#dce9ef"/>
+  <rect x="40" y="36" width="320" height="188" rx="14" fill="#ffffff" stroke="#10303b" stroke-width="4"/>
+  <rect x="56" y="52" width="288" height="156" rx="6" fill="url(#mesh)"/>
+  <g fill="#ffffff" stroke="#4f6b78" stroke-width="2">
+    <path d="M110 96c0 8-6 14-12 14s-12-6-12-14c0-9 12-22 12-22s12 13 12 22z"/>
+    <path d="M300 160c0 6-4.5 10.5-9 10.5s-9-4.5-9-10.5c0-7 9-16.5 9-16.5s9 9.5 9 16.5z"/>
+  </g>
+  <g stroke="#f2b33d" stroke-width="4" stroke-linecap="round">
+    <path d="M250 70v26M237 83h26"/>
+    <path d="M150 150v18M141 159h18"/>
+    <path d="M320 98v14M313 105h14"/>
+  </g>
+  <path d="M200 224v18" stroke="#10303b" stroke-width="4" stroke-linecap="round"/>
+</svg>

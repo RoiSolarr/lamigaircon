@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ChatWidget, OpenChatButton } from "@/components/ChatWidget";
 import { FreeTimes } from "@/components/FreeTimes";
@@ -32,6 +33,14 @@ const visitSteps = [
     body: "A day after the job we check that the unit is running well. Our 7 day warranty starts here.",
   },
 ];
+
+// One icon per service code in /public/images/services (replace the SVGs any time).
+const SERVICE_ICONS: Record<string, string> = {
+  window_cleaning: "window type aircon",
+  split_cleaning: "split type aircon",
+  split_deep_cleaning: "split type aircon with water drops",
+  checkup: "magnifying glass over a pulse line",
+};
 
 const promises = [
   { title: "Pay after the job", body: "Cash or GCash, with a receipt for every job.", icon: "M3 7h18v10H3zM7 12h.01M17 12h.01M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" },
@@ -79,7 +88,19 @@ export default async function Home() {
                 <span className="font-bold text-ink">Open {hours}.</span> {closedText}
               </p>
             </div>
-            <FreeTimes services={services} days={days} />
+            <div className="min-w-0">
+              <Image
+                src="/images/hero-aircon.svg"
+                alt="A clean split type aircon on the wall, set to 18 degrees and blowing cold air"
+                width={600}
+                height={262}
+                sizes="(min-width: 1024px) 400px, (min-width: 640px) 60vw, 80vw"
+                loading="eager"
+                fetchPriority="high"
+                className="mx-auto mb-3 h-auto w-[80%] sm:w-[72%]"
+              />
+              <FreeTimes services={services} days={days} />
+            </div>
           </div>
         </section>
 
@@ -111,12 +132,21 @@ export default async function Home() {
             </div>
             <ul className="panel mt-10 divide-y divide-mist/70 overflow-hidden">
               {services.map((s) => (
-                <li key={s.code} className="grid gap-4 p-5 transition-colors hover:bg-frost/60 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-10 sm:p-7">
+                <li key={s.code} className="grid grid-cols-[auto_1fr] gap-4 p-5 transition-colors hover:bg-frost/60 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-x-6 sm:p-7">
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-frost">
+                    <Image
+                      src={`/images/services/${s.code in SERVICE_ICONS ? s.code : "default"}.svg`}
+                      alt={`Icon: ${SERVICE_ICONS[s.code] ?? "aircon"}`}
+                      width={32}
+                      height={32}
+                      sizes="32px"
+                    />
+                  </span>
                   <div>
                     <h3 className="title text-xl">{s.name}</h3>
                     <p className="mt-1 max-w-[42rem] text-steel">{s.description}</p>
                   </div>
-                  <div className="flex items-center justify-between gap-6 sm:justify-end">
+                  <div className="col-span-2 flex items-center justify-between gap-6 sm:col-span-1 sm:justify-end">
                     <div className="sm:text-right">
                       <p className="readout text-[2rem] leading-none">{formatPeso(s.price_php)}</p>
                       <p className="mt-1 text-sm text-steel">about {formatHours(s.duration_minutes)}</p>
@@ -128,6 +158,33 @@ export default async function Home() {
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+
+        <section aria-labelledby="results-title" className="pb-20">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr] lg:items-end">
+              <h2 id="results-title" className="display-wide text-3xl sm:text-[2.6rem]">Before and after</h2>
+              <p className="max-w-[34rem] text-steel lg:justify-self-end lg:text-right">
+                A dusty filter makes the unit work harder and blow warm, smelly air. We wash it, the coils and the blower wheel.
+              </p>
+            </div>
+            <div className="mt-10 grid gap-6 sm:grid-cols-2">
+              {[
+                { src: "/images/before-cleaning.svg", label: "Before", alt: "Aircon filter before cleaning, its mesh covered in grey dust", style: "bg-white text-ink" },
+                { src: "/images/after-cleaning.svg", label: "After", alt: "The same filter after cleaning, clear and bright", style: "bg-sun text-deep" },
+              ].map((img) => (
+                <figure key={img.label} className="panel overflow-hidden p-3">
+                  <div className="relative">
+                    <Image src={img.src} alt={img.alt} width={400} height={260} sizes="(min-width: 640px) 45vw, 92vw" className="h-auto w-full rounded-2xl" />
+                    <span className={`pill absolute top-3 left-3 shadow-[var(--shadow-soft)] ${img.style}`}>{img.label}</span>
+                  </div>
+                  <figcaption className="px-2 pt-3 pb-1 text-steel">
+                    {img.label === "Before" ? "Dust on the filter blocks the air and spreads smell." : "Clean mesh, cold air and no smell."}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
           </div>
         </section>
 

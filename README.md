@@ -45,6 +45,7 @@ src/
   app/admin/                      staff sign in, appointments, inbox, automation
   components/ChatWidget.tsx       the chat bubble
   proxy.ts                        keeps the staff session fresh
+public/images/                    placeholder SVGs (hero, before and after, service icons); swap in your own
 scripts/security-check.mjs        PASS/FAIL check of what visitors can access
 ```
 
