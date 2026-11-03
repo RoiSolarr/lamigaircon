@@ -77,7 +77,16 @@ export function SiteFooter({ name, phone, email }: { name: string; phone: string
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm sm:px-6">
-          <p>A demo business for an AI automation project.</p>
+          <div>
+            <p>A demo business for an AI automation project.</p>
+            <p>
+              Built by{" "}
+              <a href="https://roislrportfolio.netlify.app" target="_blank" rel="noopener noreferrer" className="font-bold text-frost underline underline-offset-2 hover:text-sun">
+                Roi Vincent Solar
+              </a>
+              , automation developer.
+            </p>
+          </div>
           <Link href="/admin" className="hover:text-frost hover:underline">Staff sign in</Link>
         </div>
       </div>

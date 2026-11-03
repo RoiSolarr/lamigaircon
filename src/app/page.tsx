@@ -42,6 +42,13 @@ const SERVICE_ICONS: Record<string, string> = {
   checkup: "magnifying glass over a pulse line",
 };
 
+// Clearly fictional: this is a demo business, so the section says so on the page.
+const sampleReviews = [
+  { name: "Sample customer, Lipa City", service: "Split type cleaning", text: "Booked through the chat at 10 PM and got a confirmation email right away. The technician came on time and the unit is cold again." },
+  { name: "Sample customer, Batangas City", service: "Window type cleaning", text: "The reminder the day before helped, I almost forgot. Clean work, they covered the floor and wall before washing." },
+  { name: "Sample customer, Ibaan", service: "Check up and diagnosis", text: "Asked about a leak in the chat and a staff member replied with a quote the same day. Easy to reschedule too." },
+];
+
 const promises = [
   { title: "Pay after the job", body: "Cash or GCash, with a receipt for every job.", icon: "M3 7h18v10H3zM7 12h.01M17 12h.01M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" },
   { title: "No travel fee", body: "Anywhere in our service area.", icon: "M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" },
@@ -211,6 +218,35 @@ export default async function Home() {
                 </li>
               ))}
             </ol>
+          </div>
+        </section>
+
+        <section aria-labelledby="reviews-title" className="py-20">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr] lg:items-end">
+              <h2 id="reviews-title" className="display-wide text-3xl sm:text-[2.6rem]">Sample reviews</h2>
+              <p className="max-w-[34rem] text-steel lg:justify-self-end lg:text-right">
+                Lamig is a demo business, so these reviews are fictional examples of what customers could say.
+              </p>
+            </div>
+            <ul className="mt-10 grid gap-6 md:grid-cols-3">
+              {sampleReviews.map((r) => (
+                <li key={r.name} className="panel flex flex-col p-6">
+                  <p className="flex gap-0.5 text-sun" aria-label="5 out of 5 stars">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <svg key={i} aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" />
+                      </svg>
+                    ))}
+                  </p>
+                  <blockquote className="mt-4 flex-1 text-lg">&ldquo;{r.text}&rdquo;</blockquote>
+                  <p className="mt-5 border-t border-mist/70 pt-4 text-sm">
+                    <span className="font-bold">{r.name}</span>
+                    <span className="block text-steel">{r.service}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
