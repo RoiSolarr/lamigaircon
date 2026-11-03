@@ -2,6 +2,8 @@ import Link from "next/link";
 import { setAppointmentStatus, setAppointmentTechnician } from "@/app/admin/actions";
 import { AdminPageHeader, StatStrip } from "@/components/AdminPageHeader";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { NoticeBanner } from "@/components/NoticeBanner";
+import { StatusActions } from "@/components/StatusActions";
 import { addDays, formatDateTime, formatPeso, formatTime, manilaDateOf, manilaToday } from "@/lib/format";
 import { staffDb } from "@/lib/supabase/server";
 
@@ -22,11 +24,6 @@ type Row = {
   technicians: { full_name: string } | null;
 };
 
-const VIEWS = {
-  upcoming: "Upcoming",
-  past: "Past 30 days",
-} as const;
-
 const STATUS_STYLE: Record<Row["status"], string> = {
   booked: "bg-ice text-ink",
   completed: "bg-ok/10 text-ok",
@@ -46,25 +43,22 @@ const STATUS_LABEL: Record<Row["status"], string> = {
   no_show: "No show",
 };
 
-export default async function AppointmentsPage({ searchParams }: { searchParams: Promise<{ view?: string; error?: string }> }) {
-  const { view: rawView, error: actionError } = await searchParams;
-  const view = rawView === "past" ? "past" : "upcoming";
+// Open jobs only. Once a job is marked done, cancelled or no show, it moves to
+// Booking history. Older jobs nobody marked yet stay here on top, so none are forgotten.
+export default async function AppointmentsPage({ searchParams }: { searchParams: Promise<{ error?: string; notice?: string }> }) {
+  const { error: actionError, notice } = await searchParams;
   const today = manilaToday();
-  // Midnight in Manila (UTC+8, no daylight saving) as an absolute time.
-  const startOfToday = new Date(`${today}T00:00:00+08:00`).toISOString();
 
   const db = await staffDb();
-  let query = db
+  const query = db
     .from("appointments")
-    .select("id, ref, starts_at, ends_at, address, notes, status, source, conversation_id, created_at, technician_id, customers(name, phone, email), services(name, price_php), technicians(full_name)");
-
-  query =
-    view === "past"
-      ? query.lt("starts_at", startOfToday).gte("starts_at", new Date(`${addDays(today, -30)}T00:00:00+08:00`).toISOString()).order("starts_at", { ascending: false })
-      : query.gte("starts_at", startOfToday).order("starts_at", { ascending: true });
+    .select("id, ref, starts_at, ends_at, address, notes, status, source, conversation_id, created_at, technician_id, customers(name, phone, email), services(name, price_php), technicians(full_name)")
+    .eq("status", "booked")
+    .gte("starts_at", new Date(`${addDays(today, -60)}T00:00:00+08:00`).toISOString())
+    .order("starts_at", { ascending: true });
 
   const [{ data, error }, { data: techData }] = await Promise.all([
-    query.limit(200),
+    query.limit(300),
     db.from("technicians").select("id, full_name").eq("is_active", true).order("sort_order"),
   ]);
   const technicians = (techData ?? []) as { id: string; full_name: string }[];
@@ -77,43 +71,40 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
     byDay.set(day, [...(byDay.get(day) ?? []), r]);
   }
 
-  const todayCount = (byDay.get(today) ?? []).filter((r) => r.status === "booked").length;
-  const fromChat = rows.filter((r) => r.source === "chat").length;
-  const unassigned = rows.filter((r) => r.status === "booked" && !r.technician_id).length;
-  const back = view === "past" ? "/admin?view=past" : "/admin";
+  const overdue = rows.filter((r) => manilaDateOf(r.starts_at) < today);
+  const upcoming = rows.filter((r) => manilaDateOf(r.starts_at) >= today);
+  const todayCount = (byDay.get(today) ?? []).length;
+  const fromChat = upcoming.filter((r) => r.source === "chat").length;
+  const unassigned = upcoming.filter((r) => !r.technician_id).length;
+  const back = "/admin";
 
   return (
     <>
       <ErrorBanner message={actionError} />
+      <NoticeBanner message={notice} />
       <AdminPageHeader
         title="Appointments"
-        actions={
-          <nav aria-label="Appointment views" className="flex gap-1 rounded-full bg-white p-1 shadow-[var(--shadow-soft)] ring-1 ring-mist/70">
-            {Object.entries(VIEWS).map(([key, label]) => (
-              <Link
-                key={key}
-                href={key === "upcoming" ? "/admin" : `/admin?view=${key}`}
-                aria-current={view === key ? "page" : undefined}
-                className={`rounded-full px-4 py-1.5 font-bold transition-colors ${view === key ? "bg-ink text-frost" : "text-steel hover:text-ink"}`}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-        }
+        actions={<Link href="/admin/history" className="btn btn-quiet btn-sm">Booking history</Link>}
       >
-        {view === "upcoming" ? "Every booking from the website and the AI receptionist, from today on." : "Jobs from the last 30 days, newest first."}
+        Open jobs from the website and the AI receptionist. Done, cancelled and no show jobs move to Booking history.
       </AdminPageHeader>
 
-      {view === "upcoming" && (
-        <StatStrip
-          stats={[
-            { label: "Jobs left today", value: todayCount },
-            { label: "Upcoming jobs", value: rows.length },
-            { label: "Booked by the AI", value: fromChat },
-            { label: "No technician yet", value: unassigned, tone: unassigned > 0 ? "warn" : undefined },
-          ]}
-        />
+      <StatStrip
+        stats={[
+          { label: "Jobs left today", value: todayCount },
+          { label: "Upcoming jobs", value: upcoming.length },
+          { label: "Booked by the AI", value: fromChat },
+          { label: "No technician yet", value: unassigned, tone: unassigned > 0 ? "warn" : undefined },
+        ]}
+      />
+
+      {overdue.length > 0 && (
+        <p className="mt-4 flex items-start gap-3 rounded-2xl bg-warn/10 px-4 py-3 text-warn ring-1 ring-warn/30">
+          <span aria-hidden className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-warn font-bold text-white">!</span>
+          <span>
+            <strong>{overdue.length} past job{overdue.length === 1 ? " is" : "s are"} not marked yet.</strong> Mark each one done, no show or cancelled, so the customer gets the right follow up.
+          </span>
+        </p>
       )}
 
       {unassigned > 0 && (
@@ -127,7 +118,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
 
       {rows.length === 0 && (
         <div className="panel mt-10 p-10 text-center">
-          <p className="title text-xl">{view === "upcoming" ? "No upcoming appointments yet" : "No appointments in the last 30 days"}</p>
+          <p className="title text-xl">No open jobs</p>
           <p className="mt-2 text-steel">
             Bookings from the website and the chat show up here. Try booking one on the <Link href="/book" className="underline">booking page</Link>.
           </p>
@@ -136,11 +127,11 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
 
       {[...byDay.entries()].map(([day, items]) => (
         <section key={day} className="mt-10">
-          <h2 className="title flex items-baseline gap-3 text-xl">
+          <h2 className={`title flex flex-wrap items-baseline gap-3 text-xl ${day < today ? "text-warn" : ""}`}>
             {day === today ? "Today, " : ""}
             {new Date(`${day}T00:00:00Z`).toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })}
             <span className="text-sm font-normal text-steel">
-              {items.length} job{items.length === 1 ? "" : "s"}
+              {items.length} job{items.length === 1 ? "" : "s"}{day < today ? ", not marked yet" : ""}
             </span>
           </h2>
           <ul className="panel mt-3 divide-y divide-mist/70 overflow-hidden">
@@ -206,18 +197,16 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
                   <p className="mt-1 text-sm text-steel">{r.address}</p>
                   {r.notes && <p className="mt-2 rounded-lg bg-frost px-3 py-1.5 text-sm text-steel">“{r.notes}”</p>}
                 </div>
-                <form action={setAppointmentStatus} className="flex flex-wrap items-start gap-2 lg:w-40 lg:flex-col lg:items-stretch">
+                <form action={setAppointmentStatus} className="lg:w-44">
                   <input type="hidden" name="id" value={r.id} />
                   <input type="hidden" name="back" value={back} />
-                  {r.status === "booked" ? (
-                    <>
-                      <button name="status" value="completed" className="btn btn-ink btn-sm">Mark done</button>
-                      <button name="status" value="no_show" className="btn btn-quiet btn-sm">No show</button>
-                      <button name="status" value="cancelled" className="btn btn-quiet btn-sm hover:!border-bad hover:text-bad">Cancel</button>
-                    </>
-                  ) : (
-                    <button name="status" value="booked" className="btn btn-quiet btn-sm">Set back to booked</button>
-                  )}
+                  <StatusActions
+                    options={[
+                      { value: "completed", label: "Mark done", question: `Mark ${r.ref} as done?`, confirm: "Yes, it's done", primary: true },
+                      { value: "no_show", label: "No show", question: "Nobody was home?", confirm: "Yes, no show" },
+                      { value: "cancelled", label: "Cancel", question: `Cancel ${r.ref}?`, confirm: "Yes, cancel", danger: true },
+                    ]}
+                  />
                 </form>
               </li>
             ))}

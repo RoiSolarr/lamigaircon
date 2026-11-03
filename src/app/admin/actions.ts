@@ -19,7 +19,7 @@ function backTo(formData: FormData, fallback: string) {
   return back.startsWith("/admin") || back.startsWith("/tech") ? back : fallback;
 }
 
-async function run(fn: string, args: Record<string, unknown>, back: string, alsoRefresh: string[] = []) {
+async function run(fn: string, args: Record<string, unknown>, back: string, alsoRefresh: string[] = [], notice?: string) {
   const db = await staffDb();
   const { data, error } = await db.rpc(fn, args);
   const result = (data ?? { ok: false }) as Result;
@@ -27,19 +27,30 @@ async function run(fn: string, args: Record<string, unknown>, back: string, also
 
   for (const path of [back.split("?")[0], ...alsoRefresh]) revalidatePath(path);
 
-  if (message) {
+  if (message || notice) {
     const url = new URL(back, "http://x");
-    url.searchParams.set("error", message);
+    url.searchParams.delete("error");
+    url.searchParams.delete("notice");
+    url.searchParams.set(message ? "error" : "notice", (message ?? notice)!);
     redirect(url.pathname + url.search);
   }
 }
 
+const STATUS_NOTICE: Record<string, string> = {
+  completed: "Job marked done. It is now in Booking history.",
+  cancelled: "Job cancelled. It is now in Booking history.",
+  no_show: "Job marked as no show. It is now in Booking history.",
+  booked: "Job set back to booked. It is back on Appointments.",
+};
+
 export async function setAppointmentStatus(formData: FormData) {
+  const back = backTo(formData, "/admin");
   await run(
     "set_appointment_status",
     { p_appointment_id: text(formData, "id"), p_status: text(formData, "status") },
-    backTo(formData, "/admin"),
-    ["/admin", "/tech"],
+    back,
+    ["/admin", "/admin/history", "/admin/customers", "/tech"],
+    back.startsWith("/admin") ? STATUS_NOTICE[text(formData, "status")] : undefined,
   );
 }
 

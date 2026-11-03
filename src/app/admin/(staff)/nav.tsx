@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 
 const ICONS: Record<string, string> = {
   "/admin": "M4 6h16v14H4zM4 10h16M9 3v4M15 3v4",
+  "/admin/history": "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2",
   "/admin/inbox": "M4 5h16v11H9l-5 4z",
+  "/admin/customers": "M16 21v-1.5A3.5 3.5 0 0 0 12.5 16h-5A3.5 3.5 0 0 0 4 19.5V21M10 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6",
   "/admin/technicians": "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c1-4 3.8-6 7-6s6 2 7 6M16 3.5a4 4 0 0 1 0 7.5M18.5 15c1.8.8 3 2.7 3.5 6",
   "/admin/automation": "M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",
 };
@@ -15,6 +17,7 @@ export function AdminNav({ waiting, vertical = false }: { waiting: number; verti
   const path = usePathname();
   const links = [
     { href: "/admin", label: "Appointments" },
+    { href: "/admin/history", label: "Booking history" },
     { href: "/admin/inbox", label: "Inbox", badge: waiting },
     { href: "/admin/technicians", label: "Technicians" },
     { href: "/admin/automation", label: "Automation" },
